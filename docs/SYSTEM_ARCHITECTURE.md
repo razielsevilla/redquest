@@ -236,3 +236,14 @@ For production scale (Phase 1+), migrate to:
 - ElastiCache Redis for geo-index caching
 - CloudFront CDN
 - Auto-scaling groups for API servers
+
+## Deferred for 7-Day Hackathon
+
+To stay focused on a shippable demo, the following architecture features are deferred for the short hackathon timeline:
+
+- Full WebSocket-based real-time layer (use 5s polling for status updates in the demo)
+- Live rider GPS tracking map (show static/mock ETA data instead)
+- Expanding-ring retry workflow (use a fixed 10 km radius for matching in the demo)
+- Robust offline sync / background location handling
+- Production-grade CDN, autoscaling and Redis caching (not required for demo scale)
+

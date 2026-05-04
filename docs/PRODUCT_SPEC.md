@@ -137,6 +137,20 @@ RedQuest is an emergency blood donation coordination platform. It reduces the ti
 - Blood inventory sync with hospitals
 - Predictive shortage alerts
 
+### Deferred for 7-Day Hackathon
+
+The following features are intentionally deferred from the 7-day (or 4-day) hackathon MVP and should be considered post-hackathon work:
+
+- Leaderboard (visual leaderboard screen and ranking endpoints)
+- Badge unlock modal and full badge-award flow (badges can be mocked or shown as screenshots)
+- Donation history list (detailed per-donor history screens)
+- Expanding-ring geo fallback (use fixed 10 km radius for the demo)
+- Hospital QR check-in (simulate completion via a demo button or `/checkin/simulate` endpoint)
+- App icon and custom splash screen
+- Offline / no-network error handling
+- WebSocket real-time updates (use 5s polling as fallback)
+
+
 ---
 
 ## 5. Blood Type Compatibility Matrix

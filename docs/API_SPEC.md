@@ -394,6 +394,17 @@ List all available badges.
 }
 ```
 
+## Deferred Endpoints (7-Day Hackathon)
+
+The following API endpoints are considered out-of-scope for the short hackathon demo and should be implemented after the event if time permits:
+
+- `POST /checkin` and `GET /checkin/qr/:quest_id` — hospital QR check-in can be simulated with a `/checkin/simulate` demo endpoint
+- `GET /leaderboard` — leaderboard can be shown as a static screenshot or generated from a simple XP query post-hackathon
+- `GET /badges` (full badge-award flow) — badge awarding may be mocked in the demo
+- `GET /quests/history` — donation history screens may be omitted or simplified for the demo
+
+For the hackathon MVP, prioritize: `POST /requests`, `GET /requests/:id`, `GET /quests/active`, `POST /quests/:id/accept`, and the notification hooks.
+
 ---
 
 ## Hospitals

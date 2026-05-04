@@ -30,6 +30,18 @@
 
 ---
 
+## Deferred for 7-Day Hackathon
+
+The following screens / flows are deferred for the short hackathon timeline and can be mocked or removed from the demo sequence:
+
+- S09 — QR Check-in (display only; actual scan flow simulated)
+- S11 — Donor Profile (full profile with badges)
+- S12 — Donation History (detailed history view)
+- S13 — Leaderboard (show as static screenshot or omit)
+- S17 — Hospital Dashboard (limited or simulated)
+
+Keep core screens (Onboarding, Register, Donor Home, Quest Alert, Quest Accepted, Rider En Route, Post Request, Request Status) as the primary demo path.
+
 ## Flow 1 — Onboarding & Registration
 
 ```

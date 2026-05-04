@@ -318,3 +318,13 @@ RETURNING id, request_id, donor_id;
 | quests | expires_at | BTREE (partial) | Expired quest cleanup |
 | blood_requests | status | BTREE | Active request lookup |
 | donations | donor_id | BTREE | Donor history lookup |
+
+## Deferred / Optional Schema Items (7-Day Hackathon)
+
+The following schema elements are relevant to the full product but may be simplified, mocked, or omitted for the hackathon MVP:
+
+- `badges` and `user_badges` — badge award flows can be mocked or surfaced as static UI for the demo
+- `donations` table: hospital QR check-in flow can be simulated by a demo endpoint (`/checkin/simulate`) instead of full QR-based confirmation
+- Leaderboard-related denormalized tables or caches — leaderboard can be generated from simple XP queries without additional schema optimizations
+
+Keep these items in the repo for future work, but prioritize the core `users`, `blood_requests`, `quests`, and `riders` tables for the demo.
