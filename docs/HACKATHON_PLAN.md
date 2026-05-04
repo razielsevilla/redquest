@@ -76,10 +76,10 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 **Theme:** The matching engine works; requesters can post and track
 
 **Backend Dev**
-- [ ] POST `/requests` — create blood request (blood type, hospital_id, units, urgency)
-- [ ] GET `/requests/:id` — fetch status with nested quest and rider info
-- [ ] Geo-matching query using PostGIS `ST_DWithin` (fixed 10 km radius, sorted by distance)
-- [ ] Quest creation: on new request, find top 5 compatible donors, create quest records
+- [x] POST `/requests` — create blood request (blood type, hospital_id, units, urgency)
+- [x] GET `/requests/:id` — fetch status with nested quest and rider info
+- [x] Geo-matching query using PostGIS `ST_DWithin` (fixed 10 km radius, sorted by distance)
+- [x] Quest creation: on new request, find top 5 compatible donors, create quest records
 - [ ] Push notification trigger: call Firebase Admin SDK with quest payload for each matched donor
 - [ ] 5-minute quest expiry: use `setTimeout` on acceptance — expire and move to next donor
 - [ ] POST `/quests/:id/accept` — lock donor to quest, create mock rider record (name, plate, ETA)
