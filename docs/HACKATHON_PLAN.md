@@ -56,11 +56,11 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [ ] Blood type compatibility matrix utility function
 
 **Mobile Dev**
-- [ ] Initialize React Native + Expo project
-- [ ] Install and configure React Navigation (stack + bottom tabs)
-- [ ] Create skeleton screens: Login, Register, Donor Home, Requester Home
-- [ ] Register screen: name, email, password, role selector, blood type selector (donors only)
-- [ ] Login screen with JWT stored in SecureStore
+- [x] Initialize React Native + Expo project
+- [x] Install and configure React Navigation (stack + bottom tabs)
+- [x] Create skeleton screens: Login, Register, Donor Home, Requester Home
+- [x] Register screen: name, email, password, role selector, blood type selector (donors only)
+- [x] Login screen with JWT stored in SecureStore
 - [ ] Wire auth screens to backend — registration and login working end-to-end by EOD
 
 **Designer**
