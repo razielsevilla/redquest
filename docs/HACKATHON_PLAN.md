@@ -42,11 +42,9 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 **Theme:** Everything is set up and users can register by end of day
 
 **All team — Morning (first 2 hours)**
-- [ ] Finalize tech stack (confirm React Native + Expo, Node.js, PostgreSQL + PostGIS, Firebase FCM)
-- [ ] Create GitHub repo, set up `main` and `dev` branches
+- [x] Finalize tech stack (confirm React Native + Expo, Node.js, PostgreSQL + PostGIS, Firebase FCM)
+- [x] Create GitHub repo, set up `main` and `dev` branches
 - [ ] Create shared Figma file with color system: primary `#E24B4A`, neutrals, typography
-- [ ] Set up group chat and agree on a check-in time each evening (15 min)
-- [ ] Designer starts wireframes immediately — dev setup can happen in parallel
 
 **Backend Dev**
 - [ ] Initialize Node.js + Express project, create `.env.example`
