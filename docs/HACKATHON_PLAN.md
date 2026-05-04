@@ -47,13 +47,13 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [ ] Create shared Figma file with color system: primary `#E24B4A`, neutrals, typography
 
 **Backend Dev**
-- [ ] Initialize Node.js + Express project, create `.env.example`
-- [ ] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
-- [ ] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
-- [ ] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
-- [ ] POST `/auth/register` and POST `/auth/login` with JWT
-- [ ] GET `/users/me` — profile endpoint
-- [ ] Blood type compatibility matrix utility function
+- [x] Initialize Node.js + Express project, create `.env.example`
+- [x] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
+- [x] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
+- [x] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
+- [x] POST `/auth/register` and POST `/auth/login` with JWT
+- [x] GET `/users/me` — profile endpoint
+- [x] Blood type compatibility matrix utility function
 
 **Mobile Dev**
 - [x] Initialize React Native + Expo project
