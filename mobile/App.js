@@ -8,39 +8,42 @@ import Login from './src/screens/Login';
 import Register from './src/screens/Register';
 import DonorHome from './src/screens/DonorHome';
 import RequesterHome from './src/screens/RequesterHome';
+import QuestAlert from './src/screens/QuestAlert';
+import QuestAccepted from './src/screens/QuestAccepted';
+import RiderEnRoute from './src/screens/RiderEnRoute';
+import QuestComplete from './src/screens/QuestComplete';
+import PostRequest from './src/screens/PostRequest';
+import RequestStatus from './src/screens/RequestStatus';
+import Onboarding from './src/screens/Onboarding';
 
-function Welcome({ navigation }) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to RedQuest</Text>
-      <Text style={styles.subtitle}>Connect blood requests, donors, and riders.</Text>
-      <TouchableOpacity style={styles.primaryButton} onPress={() => navigation?.navigate('Login')}>
-        <Text style={styles.primaryButtonText}>Sign in</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation?.navigate('Register')}>
-        <Text style={styles.secondaryButtonText}>Create account</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function DonorTabs() {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Home" component={DonorHome} options={{ title: 'Donor Home' }} />
-      <Tab.Screen
-        name="Profile"
-        options={{ title: 'Profile' }}
-      >
-        {() => (
-          <View style={styles.container}>
-            <Text style={styles.title}>Profile</Text>
-          </View>
-        )}
-      </Tab.Screen>
+    <Tab.Navigator screenOptions={{ 
+      headerShown: false,
+      tabBarStyle: { backgroundColor: '#1F2937', borderTopColor: '#374151' },
+      tabBarActiveTintColor: '#E24B4A',
+      tabBarInactiveTintColor: '#9CA3AF'
+    }}>
+      <Tab.Screen name="Home" component={DonorHome} options={{ title: 'Home' }} />
+    </Tab.Navigator>
+  );
+}
+
+function RequesterTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ 
+      headerShown: false,
+      tabBarStyle: { backgroundColor: '#1F2937', borderTopColor: '#374151' },
+      tabBarActiveTintColor: '#E24B4A',
+      tabBarInactiveTintColor: '#9CA3AF'
+    }}>
+      <Tab.Screen name="Home" component={RequesterHome} options={{ title: 'Home' }} />
     </Tab.Navigator>
   );
 }
@@ -48,12 +51,18 @@ function DonorTabs() {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Welcome">
-        <Stack.Screen name="Welcome" options={{ headerShown: false }} component={Welcome} />
+      <Stack.Navigator initialRouteName="Onboarding">
+        <Stack.Screen name="Onboarding" options={{ headerShown: false }} component={Onboarding} />
         <Stack.Screen name="Login" options={{ title: 'Login' }} component={Login} />
         <Stack.Screen name="Register" options={{ title: 'Register' }} component={Register} />
         <Stack.Screen name="Donor" component={DonorTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="Requester" options={{ title: 'Requester Home' }} component={RequesterHome} />
+        <Stack.Screen name="Requester" component={RequesterTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="QuestAlert" component={QuestAlert} options={{ presentation: 'fullScreenModal', headerShown: false }} />
+        <Stack.Screen name="QuestAccepted" component={QuestAccepted} options={{ headerShown: false }} />
+        <Stack.Screen name="RiderEnRoute" component={RiderEnRoute} options={{ headerShown: false }} />
+        <Stack.Screen name="QuestComplete" component={QuestComplete} options={{ headerShown: false }} />
+        <Stack.Screen name="PostRequest" component={PostRequest} options={{ title: 'Post a Request', headerStyle: { backgroundColor: '#111827' }, headerTintColor: '#fff' }} />
+        <Stack.Screen name="RequestStatus" component={RequestStatus} options={{ title: 'Live Tracking', headerStyle: { backgroundColor: '#111827' }, headerTintColor: '#fff' }} />
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>

@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  SafeAreaView
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { loginUser } from '../lib/api';
@@ -94,88 +95,104 @@ export default function Login({ navigation, route }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Welcome back</Text>
-      <Text style={styles.subtitle}>Sign in now. The JWT is stored locally for the demo.</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Sign in to continue your quest.</Text>
 
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="juan@email.com"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email address</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="juan@email.com"
+            placeholderTextColor="#6B7280"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
 
-      <Text style={styles.label}>Password</Text>
-      <View style={styles.passwordRow}>
-        <TextInput
-          style={[styles.input, styles.passwordInput]}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="••••••••"
-          secureTextEntry={!showPassword}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <TouchableOpacity style={styles.toggleButton} onPress={() => setShowPassword((current) => !current)}>
-          <Text style={styles.toggleButtonText}>{showPassword ? 'Hide' : 'Show'}</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              placeholderTextColor="#6B7280"
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity style={styles.toggleButton} onPress={() => setShowPassword((current) => !current)}>
+              <Text style={styles.toggleButtonText}>{showPassword ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submit, isSubmitting && styles.submitDisabled]}
+          onPress={handleLogin}
+          disabled={isSubmitting}
+        >
+          <Text style={styles.submitText}>{isSubmitting ? 'Signing in...' : 'Sign in'}</Text>
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity
-        style={[styles.submit, isSubmitting && styles.submitDisabled]}
-        onPress={handleLogin}
-        disabled={isSubmitting}
-      >
-        <Text style={styles.submitText}>{isSubmitting ? 'Signing in...' : 'Sign in'}</Text>
-      </TouchableOpacity>
+        {!!statusMessage && <Text style={styles.statusText}>{statusMessage}</Text>}
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={handleClearSession}>
-        <Text style={styles.secondaryButtonText}>Clear local session</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.linkButton} onPress={() => navigation?.navigate('Register')}>
+          <Text style={styles.linkButtonText}>Need an account? Register here</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.linkButton} onPress={() => navigation?.navigate('Register')}>
-        <Text style={styles.linkButtonText}>Need an account? Register here</Text>
-      </TouchableOpacity>
-
-      {!!storedEmail && <Text style={styles.sessionText}>Stored session: {storedEmail}</Text>}
-      {!!statusMessage && <Text style={styles.statusText}>{statusMessage}</Text>}
-    </ScrollView>
+        {!!storedEmail && (
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleClearSession}>
+            <Text style={styles.secondaryButtonText}>Clear local session ({storedEmail})</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#111827' },
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#F9FAFB',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginBottom: 32,
+  },
+  inputGroup: {
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    marginTop: 12,
-    marginBottom: 6,
-    color: '#333',
+    fontWeight: '600',
+    color: '#D1D5DB',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#374151',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#1F2937',
+    color: '#F9FAFB',
+    fontSize: 16,
   },
   passwordRow: {
     flexDirection: 'row',
@@ -183,23 +200,29 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderRightWidth: 0,
   },
   toggleButton: {
-    marginLeft: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#1F2937',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#374151',
+    borderLeftWidth: 0,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    justifyContent: 'center',
   },
   toggleButtonText: {
-    color: '#333',
+    color: '#9CA3AF',
     fontWeight: '600',
   },
   submit: {
-    marginTop: 20,
+    marginTop: 12,
     backgroundColor: '#E24B4A',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -208,34 +231,34 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   secondaryButton: {
-    marginTop: 12,
+    marginTop: 40,
     borderWidth: 1,
-    borderColor: '#E24B4A',
+    borderColor: '#374151',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#E24B4A',
-    fontWeight: '700',
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
   linkButton: {
-    marginTop: 14,
+    marginTop: 24,
     alignItems: 'center',
   },
   linkButtonText: {
     color: '#E24B4A',
     fontWeight: '600',
-  },
-  sessionText: {
-    marginTop: 16,
-    color: '#444',
+    fontSize: 16,
   },
   statusText: {
-    marginTop: 8,
-    color: '#666',
+    marginTop: 16,
+    color: '#F59E0B',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
