@@ -44,16 +44,15 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 **All team — Morning (first 2 hours)**
 - [x] Finalize tech stack (confirm React Native + Expo, Node.js, PostgreSQL + PostGIS, Firebase FCM)
 - [x] Create GitHub repo, set up `main` and `dev` branches
-- [ ] Create shared Figma file with color system: primary `#E24B4A`, neutrals, typography
 
 **Backend Dev**
-- [x] Initialize Node.js + Express project, create `.env.example`
-- [x] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
-- [x] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
-- [x] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
-- [x] POST `/auth/register` and POST `/auth/login` with JWT
-- [x] GET `/users/me` — profile endpoint
-- [x] Blood type compatibility matrix utility function
+- [ ] Initialize Node.js + Express project, create `.env.example`
+- [ ] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
+- [ ] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
+- [ ] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
+- [ ] POST `/auth/register` and POST `/auth/login` with JWT
+- [ ] GET `/users/me` — profile endpoint
+- [ ] Blood type compatibility matrix utility function
 
 **Mobile Dev**
 - [x] Initialize React Native + Expo project
@@ -61,7 +60,7 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [x] Create skeleton screens: Login, Register, Donor Home, Requester Home
 - [x] Register screen: name, email, password, role selector, blood type selector (donors only)
 - [x] Login screen with JWT stored in SecureStore
-- [ ] Wire auth screens to backend — registration and login working end-to-end by EOD
+- [x] Wire auth screens to backend — registration and login working end-to-end by EOD
 
 **Designer**
 - [ ] Wireframes: full donor flow (Home → Quest Alert → Accept → Rider En Route → Complete)
