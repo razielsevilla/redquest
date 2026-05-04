@@ -3,6 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('./db');
+const { getCompatibleDonorTypes } = require('./utils');
 require('dotenv').config();
 
 const app = express();
@@ -109,6 +110,109 @@ app.get('/users/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// POST /requests
+app.post('/requests', authenticateToken, async (req, res) => {
+  try {
+    const { blood_type, hospital_id, units_needed = 1, urgency = 'standard', notes } = req.body;
+    const requester_id = req.user.id;
+
+    // 1. Get hospital location
+    const hospitalRes = await pool.query('SELECT * FROM hospitals WHERE id = $1', [hospital_id]);
+    if (hospitalRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Hospital not found' });
+    }
+    const hospital = hospitalRes.rows[0];
+
+    // 2. Create the blood request
+    const requestRes = await pool.query(
+      `INSERT INTO blood_requests (requester_id, hospital_id, blood_type, units_needed, urgency, notes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [requester_id, hospital_id, blood_type, units_needed, urgency, notes]
+    );
+    const newRequest = requestRes.rows[0];
+
+    // 3. Find top 5 compatible donors within 10 km (10000 meters)
+    const compatibleTypes = getCompatibleDonorTypes(blood_type);
+    
+    // Using ST_DWithin for 10km radius and ST_Distance to sort by closest
+    const donorsRes = await pool.query(
+      `SELECT id, ST_Distance(location, $1) as distance_meters
+       FROM users 
+       WHERE role = 'donor' 
+       AND is_available = true 
+       AND blood_type = ANY($2::varchar[])
+       AND location IS NOT NULL
+       AND id != $3
+       AND ST_DWithin(location, $1, 10000)
+       ORDER BY distance_meters ASC
+       LIMIT 5`,
+      [hospital.location, compatibleTypes, requester_id]
+    );
+
+    const matchedDonors = donorsRes.rows;
+
+    // 4. Create quest records for matched donors
+    if (matchedDonors.length > 0) {
+      const questValues = matchedDonors.map(donor => 
+        `('${newRequest.id}', '${donor.id}', ${Math.round(donor.distance_meters)})`
+      ).join(',');
+
+      await pool.query(`
+        INSERT INTO quests (request_id, donor_id, distance_meters)
+        VALUES ${questValues}
+      `);
+    }
+
+    res.status(201).json({
+      request: newRequest,
+      donors_matched: matchedDonors.length,
+      message: 'Request created and matching process started'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create blood request' });
+  }
+});
+
+// GET /requests/:id
+app.get('/requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch the request details
+    const requestRes = await pool.query(
+      `SELECT r.*, h.name as hospital_name, h.address as hospital_address
+       FROM blood_requests r
+       JOIN hospitals h ON r.hospital_id = h.id
+       WHERE r.id = $1`,
+      [id]
+    );
+
+    if (requestRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Blood request not found' });
+    }
+
+    const request = requestRes.rows[0];
+
+    // Fetch the associated quests and donor info
+    const questsRes = await pool.query(
+      `SELECT q.id, q.status, q.distance_meters, q.notified_at,
+              u.name as donor_name, u.blood_type as donor_blood_type
+       FROM quests q
+       JOIN users u ON q.donor_id = u.id
+       WHERE q.request_id = $1`,
+      [id]
+    );
+
+    request.quests = questsRes.rows;
+
+    res.json({ request });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch request' });
   }
 });
 
