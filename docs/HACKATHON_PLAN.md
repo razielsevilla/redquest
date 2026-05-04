@@ -46,13 +46,13 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [x] Create GitHub repo, set up `main` and `dev` branches
 
 **Backend Dev**
-- [ ] Initialize Node.js + Express project, create `.env.example`
-- [ ] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
-- [ ] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
-- [ ] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
-- [ ] POST `/auth/register` and POST `/auth/login` with JWT
-- [ ] GET `/users/me` — profile endpoint
-- [ ] Blood type compatibility matrix utility function
+- [x] Initialize Node.js + Express project, create `.env.example`
+- [x] Set up PostgreSQL + PostGIS locally and on Railway (deploy early — don't wait)
+- [x] Run migrations: `users`, `blood_requests`, `quests`, `hospitals` tables (use `DATABASE_SCHEMA.md`)
+- [x] Seed mock data: 3 hospitals, 15 donor accounts with varied blood types and coordinates
+- [x] POST `/auth/register` and POST `/auth/login` with JWT
+- [x] GET `/users/me` — profile endpoint
+- [x] Blood type compatibility matrix utility function
 
 **Mobile Dev**
 - [x] Initialize React Native + Expo project
@@ -63,10 +63,10 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [x] Wire auth screens to backend — registration and login working end-to-end by EOD
 
 **Designer**
-- [ ] Wireframes: full donor flow (Home → Quest Alert → Accept → Rider En Route → Complete)
-- [ ] Wireframes: requester flow (Home → Post Request → Status Tracking)
-- [ ] High-fidelity: Login and Register screens (hand off to Mobile Dev by midday)
-- [ ] High-fidelity: Quest alert card (the most important component — prioritize this)
+- [x] Wireframes: full donor flow (Home → Quest Alert → Accept → Rider En Route → Complete)
+- [x] Wireframes: requester flow (Home → Post Request → Status Tracking)
+- [x] High-fidelity: Login and Register screens (hand off to Mobile Dev by midday)
+- [x] High-fidelity: Quest alert card (the most important component — prioritize this)
 
 **End of Day 1 checkpoint:** A new user can register and log in on a real device. ✓
 
