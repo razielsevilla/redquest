@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,10 +9,17 @@ import Register from './src/screens/Register';
 import DonorHome from './src/screens/DonorHome';
 import RequesterHome from './src/screens/RequesterHome';
 
-function Welcome() {
+function Welcome({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to RedQuest</Text>
+      <Text style={styles.subtitle}>Connect blood requests, donors, and riders.</Text>
+      <TouchableOpacity style={styles.primaryButton} onPress={() => navigation?.navigate('Login')}>
+        <Text style={styles.primaryButtonText}>Sign in</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation?.navigate('Register')}>
+        <Text style={styles.secondaryButtonText}>Create account</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -63,5 +70,37 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  subtitle: {
+    marginTop: 8,
+    marginBottom: 20,
+    color: '#666',
+    textAlign: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#E24B4A',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    minWidth: 180,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: '#E24B4A',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    minWidth: 180,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#E24B4A',
+    fontWeight: '700',
   },
 });

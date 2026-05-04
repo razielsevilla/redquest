@@ -8,15 +8,14 @@ import {
   ScrollView,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { loginUser } from '../lib/api';
 
 const AUTH_TOKEN_KEY = 'redquest.authToken';
 const AUTH_EMAIL_KEY = 'redquest.authEmail';
+const AUTH_ROLE_KEY = 'redquest.authRole';
+const AUTH_USER_KEY = 'redquest.authUser';
 
-function createDemoToken(email) {
-  return `demo.jwt.${email}.${Date.now()}`;
-}
-
-export default function Login({ navigation }) {
+export default function Login({ navigation, route }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +25,14 @@ export default function Login({ navigation }) {
 
   useEffect(() => {
     let mounted = true;
+
+    if (route?.params?.email) {
+      setEmail(route.params.email);
+    }
+
+    if (route?.params?.message) {
+      setStatusMessage(route.params.message);
+    }
 
     async function loadStoredSession() {
       const savedEmail = await SecureStore.getItemAsync(AUTH_EMAIL_KEY);
@@ -48,17 +55,30 @@ export default function Login({ navigation }) {
     }
 
     setIsSubmitting(true);
-    setStatusMessage('Saving a demo session locally...');
+    setStatusMessage('Signing in...');
 
     try {
-      const token = createDemoToken(email.trim().toLowerCase());
+      const response = await loginUser({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      const token = response?.token;
+      const user = response?.user;
+
+      if (!token || !user) {
+        throw new Error('Invalid login response from server');
+      }
+
       await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
       await SecureStore.setItemAsync(AUTH_EMAIL_KEY, email.trim().toLowerCase());
+      await SecureStore.setItemAsync(AUTH_ROLE_KEY, user.role || '');
+      await SecureStore.setItemAsync(AUTH_USER_KEY, JSON.stringify(user));
       setStoredEmail(email.trim().toLowerCase());
-      setStatusMessage('Session saved locally. Backend login will be wired next.');
-      navigation?.navigate('Donor');
+      setStatusMessage('Signed in successfully.');
+      navigation?.navigate(user.role === 'donor' ? 'Donor' : 'Requester');
     } catch (error) {
-      setStatusMessage('Could not save the local session. Try again.');
+      setStatusMessage(error.message || 'Could not sign in. Try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,6 +87,8 @@ export default function Login({ navigation }) {
   async function handleClearSession() {
     await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(AUTH_EMAIL_KEY);
+    await SecureStore.deleteItemAsync(AUTH_ROLE_KEY);
+    await SecureStore.deleteItemAsync(AUTH_USER_KEY);
     setStoredEmail('');
     setStatusMessage('Local session cleared.');
   }
@@ -113,6 +135,10 @@ export default function Login({ navigation }) {
 
       <TouchableOpacity style={styles.secondaryButton} onPress={handleClearSession}>
         <Text style={styles.secondaryButtonText}>Clear local session</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.linkButton} onPress={() => navigation?.navigate('Register')}>
+        <Text style={styles.linkButtonText}>Need an account? Register here</Text>
       </TouchableOpacity>
 
       {!!storedEmail && <Text style={styles.sessionText}>Stored session: {storedEmail}</Text>}
@@ -195,6 +221,14 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#E24B4A',
     fontWeight: '700',
+  },
+  linkButton: {
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  linkButtonText: {
+    color: '#E24B4A',
+    fontWeight: '600',
   },
   sessionText: {
     marginTop: 16,
