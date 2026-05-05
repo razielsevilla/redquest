@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('./db');
 const { getCompatibleDonorTypes } = require('./utils');
+const { sendQuestPushNotification } = require('./push');
 require('dotenv').config();
 
 const app = express();
@@ -11,6 +12,8 @@ app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey123';
+const QUEST_EXPIRY_MS = 5 * 60 * 1000;
+const activeQuestTimers = new Map();
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
@@ -25,6 +28,337 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+async function logNotification({ userId, type, title, body, data }) {
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, title, body, data)
+     VALUES ($1, $2, $3, $4, $5::jsonb)`,
+    [userId, type, title, body, JSON.stringify(data || {})]
+  );
+}
+
+function clearQuestTimer(questId) {
+  const timer = activeQuestTimers.get(questId);
+  if (timer) {
+    clearTimeout(timer);
+    activeQuestTimers.delete(questId);
+  }
+}
+
+async function activateNextQuest(requestId) {
+  const nextQuestResult = await pool.query(
+    `SELECT q.id, q.request_id, q.donor_id, q.distance_meters, q.expires_at, u.name, u.blood_type, u.device_token, h.name AS hospital_name
+     FROM quests q
+     JOIN blood_requests br ON br.id = q.request_id
+     JOIN users u ON u.id = q.donor_id
+     JOIN hospitals h ON h.id = br.hospital_id
+     WHERE q.request_id = $1
+       AND q.status = 'pending'
+       AND q.notified_at IS NULL
+     ORDER BY q.distance_meters ASC NULLS LAST, q.created_at ASC
+     LIMIT 1`,
+    [requestId]
+  );
+
+  const nextQuest = nextQuestResult.rows[0];
+  if (!nextQuest) {
+    await pool.query(
+      `UPDATE blood_requests
+       SET status = CASE WHEN status = 'complete' THEN status ELSE 'escalated' END,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [requestId]
+    );
+    return null;
+  }
+
+  await pool.query(
+    `UPDATE quests
+     SET notified_at = NOW()
+     WHERE id = $1`,
+    [nextQuest.id]
+  );
+
+  await pool.query(
+    `UPDATE blood_requests
+     SET status = 'notified', updated_at = NOW()
+     WHERE id = $1`,
+    [requestId]
+  );
+
+  await logNotification({
+    userId: nextQuest.donor_id,
+    type: 'quest_alert',
+    title: 'New quest available',
+    body: `Blood request for ${nextQuest.hospital_name} is waiting for you.`,
+    data: {
+      request_id: nextQuest.request_id,
+      quest_id: nextQuest.id,
+      blood_type: nextQuest.blood_type,
+      distance_meters: nextQuest.distance_meters,
+      expires_at: nextQuest.expires_at,
+    },
+  });
+
+  await sendQuestPushNotification({
+    token: nextQuest.device_token,
+    title: 'New quest available',
+    body: `Blood request for ${nextQuest.hospital_name} is waiting for you.`,
+    data: {
+      request_id: nextQuest.request_id,
+      quest_id: nextQuest.id,
+      blood_type: nextQuest.blood_type,
+      distance_meters: nextQuest.distance_meters,
+      expires_at: nextQuest.expires_at,
+    },
+  });
+
+  const timer = setTimeout(() => {
+    handleQuestExpiry(nextQuest.id).catch((error) => {
+      console.error('Quest expiry failed:', error);
+    });
+  }, QUEST_EXPIRY_MS);
+
+  activeQuestTimers.set(nextQuest.id, timer);
+
+  return nextQuest;
+}
+
+async function handleQuestExpiry(questId) {
+  clearQuestTimer(questId);
+
+  const questResult = await pool.query(
+    `SELECT id, request_id, status
+     FROM quests
+     WHERE id = $1`,
+    [questId]
+  );
+
+  const quest = questResult.rows[0];
+  if (!quest || quest.status !== 'pending') {
+    return null;
+  }
+
+  await pool.query(
+    `UPDATE quests
+     SET status = 'expired', responded_at = NOW()
+     WHERE id = $1`,
+    [questId]
+  );
+
+  return activateNextQuest(quest.request_id);
+}
+
+async function findCompatibleDonors(hospitalId, bloodType, searchRadiusMeters) {
+  const compatibleDonorTypes = getCompatibleDonorTypes(bloodType);
+
+  if (!compatibleDonorTypes.length) {
+    return [];
+  }
+
+  const donorsResult = await pool.query(
+    `SELECT
+       u.id,
+       u.name,
+       u.email,
+       u.blood_type,
+       u.device_token,
+       ROUND(ST_Distance(u.location, h.location))::integer AS distance_meters
+     FROM users u
+     JOIN hospitals h ON h.id = $1
+     WHERE u.role = 'donor'
+       AND u.is_available = true
+       AND u.location IS NOT NULL
+       AND u.blood_type = ANY($2::text[])
+       AND ST_DWithin(u.location, h.location, $3)
+     ORDER BY distance_meters ASC
+     LIMIT 5`,
+    [hospitalId, compatibleDonorTypes, searchRadiusMeters]
+  );
+
+  return donorsResult.rows;
+}
+
+async function createRequestWithQuests({
+  requesterId,
+  hospitalId,
+  bloodType,
+  unitsNeeded,
+  urgency,
+  notes,
+  searchRadiusMeters,
+}) {
+  const requestResult = await pool.query(
+    `INSERT INTO blood_requests (requester_id, hospital_id, blood_type, units_needed, urgency, notes, search_radius_m, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'matching')
+     RETURNING *`,
+    [requesterId, hospitalId, bloodType, unitsNeeded, urgency, notes || null, searchRadiusMeters]
+  );
+
+  const request = requestResult.rows[0];
+  const donors = await findCompatibleDonors(hospitalId, bloodType, searchRadiusMeters);
+  const createdQuests = [];
+
+  for (const donor of donors) {
+    const questResult = await pool.query(
+      `INSERT INTO quests (request_id, donor_id, status, notified_at, distance_meters)
+       VALUES ($1, $2, 'pending', NULL, $3)
+       RETURNING *`,
+      [request.id, donor.id, donor.distance_meters]
+    );
+
+    createdQuests.push(questResult.rows[0]);
+  }
+
+  if (createdQuests.length > 0) {
+    await activateNextQuest(request.id);
+  }
+
+  return { request, donors, quests: createdQuests };
+}
+
+async function getRequestDetails(requestId) {
+  const requestResult = await pool.query(
+    `SELECT
+       br.*,
+       h.name AS hospital_name,
+       h.address AS hospital_address,
+       h.city AS hospital_city,
+       h.location AS hospital_location,
+       json_build_object(
+         'id', requester.id,
+         'name', requester.name,
+         'email', requester.email,
+         'phone', requester.phone,
+         'role', requester.role
+       ) AS requester
+     FROM blood_requests br
+     JOIN hospitals h ON h.id = br.hospital_id
+     JOIN users requester ON requester.id = br.requester_id
+     WHERE br.id = $1`,
+    [requestId]
+  );
+
+  const request = requestResult.rows[0];
+  if (!request) {
+    return null;
+  }
+
+  const questsResult = await pool.query(
+    `SELECT
+       q.*,
+       json_build_object(
+         'id', donor.id,
+         'name', donor.name,
+         'email', donor.email,
+         'blood_type', donor.blood_type,
+         'phone', donor.phone
+       ) AS donor,
+       json_build_object(
+         'id', r.id,
+         'status', r.status,
+         'partner', r.partner,
+         'rider_name', r.rider_name,
+         'plate_number', r.plate_number,
+         'eta_minutes', r.eta_minutes,
+         'dispatched_at', r.dispatched_at
+       ) AS rider
+     FROM quests q
+     JOIN users donor ON donor.id = q.donor_id
+     LEFT JOIN riders r ON r.quest_id = q.id
+     WHERE q.request_id = $1
+     ORDER BY q.distance_meters ASC NULLS LAST, q.created_at ASC`,
+    [requestId]
+  );
+
+  return {
+    request,
+    quests: questsResult.rows,
+  };
+}
+
+async function acceptQuest(questId, donorId) {
+  const questResult = await pool.query(
+    `SELECT q.*, br.hospital_id, br.requester_id
+     FROM quests q
+     JOIN blood_requests br ON br.id = q.request_id
+     WHERE q.id = $1`,
+    [questId]
+  );
+
+  const quest = questResult.rows[0];
+  if (!quest) {
+    return { status: 404, body: { error: 'Quest not found' } };
+  }
+
+  if (quest.donor_id !== donorId) {
+    return { status: 403, body: { error: 'This quest belongs to another donor' } };
+  }
+
+  if (quest.status !== 'pending') {
+    return { status: 400, body: { error: 'Quest is no longer available' } };
+  }
+
+  clearQuestTimer(questId);
+
+  await pool.query(
+    `UPDATE quests
+     SET status = 'accepted', responded_at = NOW()
+     WHERE id = $1`,
+    [questId]
+  );
+
+  await pool.query(
+    `UPDATE blood_requests
+     SET status = 'accepted', updated_at = NOW()
+     WHERE id = $1`,
+    [quest.request_id]
+  );
+
+  const riderResult = await pool.query(
+    `INSERT INTO riders (quest_id, partner, status, rider_name, plate_number, eta_minutes)
+     VALUES ($1, 'mock', 'dispatched', $2, $3, $4)
+     RETURNING *`,
+    [questId, 'Kuya Rider', 'RQ-2048', 4]
+  );
+
+  return { status: 200, body: { questId, rider: riderResult.rows[0] } };
+}
+
+async function declineQuest(questId, donorId) {
+  const questResult = await pool.query(
+    `SELECT *
+     FROM quests
+     WHERE id = $1`,
+    [questId]
+  );
+
+  const quest = questResult.rows[0];
+  if (!quest) {
+    return { status: 404, body: { error: 'Quest not found' } };
+  }
+
+  if (quest.donor_id !== donorId) {
+    return { status: 403, body: { error: 'This quest belongs to another donor' } };
+  }
+
+  if (quest.status !== 'pending') {
+    return { status: 400, body: { error: 'Quest is no longer available' } };
+  }
+
+  clearQuestTimer(questId);
+
+  await pool.query(
+    `UPDATE quests
+     SET status = 'declined', responded_at = NOW()
+     WHERE id = $1`,
+    [questId]
+  );
+
+  await activateNextQuest(quest.request_id);
+
+  return { status: 200, body: { message: 'Quest declined' } };
+}
 
 // POST /auth/register
 app.post('/auth/register', async (req, res) => {
@@ -116,103 +450,71 @@ app.get('/users/me', authenticateToken, async (req, res) => {
 // POST /requests
 app.post('/requests', authenticateToken, async (req, res) => {
   try {
-    const { blood_type, hospital_id, units_needed = 1, urgency = 'standard', notes } = req.body;
-    const requester_id = req.user.id;
+    const {
+      hospital_id,
+      blood_type,
+      units_needed,
+      urgency,
+      notes,
+      search_radius_m,
+    } = req.body;
 
-    // 1. Get hospital location
-    const hospitalRes = await pool.query('SELECT * FROM hospitals WHERE id = $1', [hospital_id]);
-    if (hospitalRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Hospital not found' });
-    }
-    const hospital = hospitalRes.rows[0];
-
-    // 2. Create the blood request
-    const requestRes = await pool.query(
-      `INSERT INTO blood_requests (requester_id, hospital_id, blood_type, units_needed, urgency, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [requester_id, hospital_id, blood_type, units_needed, urgency, notes]
-    );
-    const newRequest = requestRes.rows[0];
-
-    // 3. Find top 5 compatible donors within 10 km (10000 meters)
-    const compatibleTypes = getCompatibleDonorTypes(blood_type);
-    
-    // Using ST_DWithin for 10km radius and ST_Distance to sort by closest
-    const donorsRes = await pool.query(
-      `SELECT id, ST_Distance(location, $1) as distance_meters
-       FROM users 
-       WHERE role = 'donor' 
-       AND is_available = true 
-       AND blood_type = ANY($2::varchar[])
-       AND location IS NOT NULL
-       AND id != $3
-       AND ST_DWithin(location, $1, 10000)
-       ORDER BY distance_meters ASC
-       LIMIT 5`,
-      [hospital.location, compatibleTypes, requester_id]
-    );
-
-    const matchedDonors = donorsRes.rows;
-
-    // 4. Create quest records for matched donors
-    if (matchedDonors.length > 0) {
-      const questValues = matchedDonors.map(donor => 
-        `('${newRequest.id}', '${donor.id}', ${Math.round(donor.distance_meters)})`
-      ).join(',');
-
-      await pool.query(`
-        INSERT INTO quests (request_id, donor_id, distance_meters)
-        VALUES ${questValues}
-      `);
+    if (!hospital_id || !blood_type) {
+      return res.status(400).json({ error: 'hospital_id and blood_type are required' });
     }
 
-    res.status(201).json({
-      request: newRequest,
-      donors_matched: matchedDonors.length,
-      message: 'Request created and matching process started'
+    const result = await createRequestWithQuests({
+      requesterId: req.user.id,
+      hospitalId: hospital_id,
+      bloodType: blood_type,
+      unitsNeeded: Number.isInteger(units_needed) ? units_needed : 1,
+      urgency: urgency || 'standard',
+      notes,
+      searchRadiusMeters: search_radius_m || 10000,
     });
+
+    res.status(201).json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create blood request' });
+    res.status(500).json({ error: 'Failed to create request' });
   }
 });
 
 // GET /requests/:id
 app.get('/requests/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const result = await getRequestDetails(req.params.id);
 
-    // Fetch the request details
-    const requestRes = await pool.query(
-      `SELECT r.*, h.name as hospital_name, h.address as hospital_address
-       FROM blood_requests r
-       JOIN hospitals h ON r.hospital_id = h.id
-       WHERE r.id = $1`,
-      [id]
-    );
-
-    if (requestRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Blood request not found' });
+    if (!result) {
+      return res.status(404).json({ error: 'Request not found' });
     }
 
-    const request = requestRes.rows[0];
-
-    // Fetch the associated quests and donor info
-    const questsRes = await pool.query(
-      `SELECT q.id, q.status, q.distance_meters, q.notified_at,
-              u.name as donor_name, u.blood_type as donor_blood_type
-       FROM quests q
-       JOIN users u ON q.donor_id = u.id
-       WHERE q.request_id = $1`,
-      [id]
-    );
-
-    request.quests = questsRes.rows;
-
-    res.json({ request });
+    res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch request' });
+  }
+});
+
+// POST /quests/:id/accept
+app.post('/quests/:id/accept', authenticateToken, async (req, res) => {
+  try {
+    const result = await acceptQuest(req.params.id, req.user.id);
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to accept quest' });
+  }
+});
+
+// POST /quests/:id/decline
+app.post('/quests/:id/decline', authenticateToken, async (req, res) => {
+  try {
+    const result = await declineQuest(req.params.id, req.user.id);
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to decline quest' });
   }
 });
 

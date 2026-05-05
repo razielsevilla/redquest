@@ -81,6 +81,37 @@ const runMigrations = async () => {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS riders (
+        id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        quest_id        UUID NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+        rider_user_id   UUID REFERENCES users(id),
+        partner         VARCHAR(50) DEFAULT 'mock',
+        partner_job_id  TEXT,
+        status          VARCHAR(20) DEFAULT 'dispatched'
+                        CHECK (status IN ('dispatched','en_route_donor','arrived_donor','en_route_hospital','arrived_hospital','complete')),
+        rider_name      VARCHAR(100),
+        plate_number    VARCHAR(20),
+        eta_minutes     INTEGER,
+        dispatched_at   TIMESTAMPTZ DEFAULT NOW(),
+        donor_picked_up_at    TIMESTAMPTZ,
+        donor_dropped_off_at  TIMESTAMPTZ
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id     UUID NOT NULL REFERENCES users(id),
+        type        VARCHAR(50) NOT NULL,
+        title       TEXT NOT NULL,
+        body        TEXT NOT NULL,
+        data        JSONB,
+        sent_at     TIMESTAMPTZ DEFAULT NOW(),
+        read_at     TIMESTAMPTZ
+      );
+    `);
+
     console.log('Migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

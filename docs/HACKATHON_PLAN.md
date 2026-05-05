@@ -80,11 +80,11 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [x] GET `/requests/:id` — fetch status with nested quest and rider info
 - [x] Geo-matching query using PostGIS `ST_DWithin` (fixed 10 km radius, sorted by distance)
 - [x] Quest creation: on new request, find top 5 compatible donors, create quest records
-- [ ] Push notification trigger: call Firebase Admin SDK with quest payload for each matched donor
-- [ ] 5-minute quest expiry: use `setTimeout` on acceptance — expire and move to next donor
-- [ ] POST `/quests/:id/accept` — lock donor to quest, create mock rider record (name, plate, ETA)
-- [ ] POST `/quests/:id/decline` — mark declined, ping next donor in queue
-- [ ] GET `/requests/:id` polling: returns current status including rider ETA
+- [x] Push notification trigger: call Firebase Admin SDK with quest payload for each matched donor
+- [x] 5-minute quest expiry: use `setTimeout` on acceptance — expire and move to next donor
+- [x] POST `/quests/:id/accept` — lock donor to quest, create mock rider record (name, plate, ETA)
+- [x] POST `/quests/:id/decline` — mark declined, ping next donor in queue
+- [x] GET `/requests/:id` polling: returns current status including rider ETA
 
 **Mobile Dev**
 - [ ] Requester home screen with "Post a Blood Request" CTA
