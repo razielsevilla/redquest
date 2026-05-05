@@ -4,7 +4,7 @@ import { StatusTimeline } from '../components/Shared';
 
 export default function RequestStatus({ navigation }) {
   const [status, setStatus] = useState('matching'); // 'matching' or 'matched'
-  
+
   // Simulate finding a donor after a few seconds
   useEffect(() => {
     if (status === 'matching') {
@@ -18,15 +18,15 @@ export default function RequestStatus({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         <View style={styles.headerBox}>
           <Text style={styles.title}>Blood request posted</Text>
           <Text style={styles.subtitle}>O+  •  Urgent  •  St. Luke's</Text>
         </View>
 
-        <StatusTimeline 
-          steps={['Matching', 'Matched', 'Dispatched', 'Done']} 
-          currentStep={status === 'matching' ? 0 : 1} 
+        <StatusTimeline
+          steps={['Matching', 'Matched', 'Dispatched', 'Done']}
+          currentStep={status === 'matching' ? 0 : 1}
         />
 
         {status === 'matching' ? (
@@ -34,10 +34,10 @@ export default function RequestStatus({ navigation }) {
             <Text style={styles.statusText}>Searching for nearby compatible donors...</Text>
             <ActivityIndicator size="large" color="#E24B4A" style={styles.spinner} />
             <Text style={styles.realTimeText}>— updates in real time</Text>
-            
+
             <View style={styles.spacer} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => navigation.goBack()}
             >
@@ -50,20 +50,25 @@ export default function RequestStatus({ navigation }) {
               <Text style={styles.checkIcon}>✓</Text>
               <Text style={styles.successTitle}>Donor found!</Text>
             </View>
-            
+
             <Text style={styles.detailText}>Blood type O+</Text>
-            <Text style={styles.detailText}>A rider is picking them up</Text>
-            
+
+            <View style={styles.riderBox}>
+              <Text style={styles.riderTitle}>Rider En Route</Text>
+              <Text style={styles.riderName}>Miguel Santos • Lalamove</Text>
+              <Text style={styles.riderPlate}>Plate: ABC 1234</Text>
+            </View>
+
             <View style={styles.etaBox}>
               <Text style={styles.etaText}>Rider ETA to donor: <Text style={styles.boldWhite}>4 min</Text></Text>
               <Text style={styles.etaText}>Estimated arrival at hospital: <Text style={styles.boldWhite}>~25 minutes</Text></Text>
             </View>
-            
+
             <Text style={styles.instructionText}>Please inform the blood bank to prepare.</Text>
-            
+
             <View style={styles.spacer} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.homeButton}
               onPress={() => navigation.navigate('Requester')}
             >
@@ -83,17 +88,29 @@ const styles = StyleSheet.create({
   headerBox: { marginBottom: 16 },
   title: { color: '#F9FAFB', fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { color: '#D1D5DB', fontSize: 16 },
-  
+
   matchingState: { flex: 1, alignItems: 'center', marginTop: 40 },
   statusText: { color: '#F9FAFB', fontSize: 18, textAlign: 'center', marginBottom: 32 },
   spinner: { marginBottom: 32 },
   realTimeText: { color: '#9CA3AF', fontSize: 14, fontStyle: 'italic' },
-  
+
   matchedState: { flex: 1, marginTop: 40 },
   successBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   checkIcon: { color: '#10B981', fontSize: 24, fontWeight: 'bold', marginRight: 12 },
   successTitle: { color: '#10B981', fontSize: 22, fontWeight: 'bold' },
   detailText: { color: '#F9FAFB', fontSize: 18, marginBottom: 12 },
+  riderBox: {
+    backgroundColor: '#1F2937',
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  riderTitle: { color: '#9CA3AF', fontSize: 14, marginBottom: 4 },
+  riderName: { color: '#F9FAFB', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
+  riderPlate: { color: '#D1D5DB', fontSize: 16, fontFamily: 'monospace' },
   etaBox: {
     backgroundColor: '#1F2937',
     padding: 16,
@@ -106,7 +123,7 @@ const styles = StyleSheet.create({
   etaText: { color: '#9CA3AF', fontSize: 16, marginBottom: 8 },
   boldWhite: { color: '#F9FAFB', fontWeight: 'bold' },
   instructionText: { color: '#F59E0B', fontSize: 16, fontWeight: '600', textAlign: 'center' },
-  
+
   spacer: { flex: 1 },
   cancelButton: { paddingVertical: 16, alignItems: 'center', width: '100%' },
   cancelButtonText: { color: '#9CA3AF', fontSize: 16, fontWeight: '600' },

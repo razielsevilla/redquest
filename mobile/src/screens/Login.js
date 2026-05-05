@@ -8,7 +8,7 @@ import {
   ScrollView,
   SafeAreaView
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import * as storage from '../lib/storage';
 import { loginUser } from '../lib/api';
 
 const AUTH_TOKEN_KEY = 'redquest.authToken';
@@ -36,7 +36,7 @@ export default function Login({ navigation, route }) {
     }
 
     async function loadStoredSession() {
-      const savedEmail = await SecureStore.getItemAsync(AUTH_EMAIL_KEY);
+      const savedEmail = await storage.getItem(AUTH_EMAIL_KEY);
       if (mounted && savedEmail) {
         setStoredEmail(savedEmail);
       }
@@ -71,10 +71,10 @@ export default function Login({ navigation, route }) {
         throw new Error('Invalid login response from server');
       }
 
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
-      await SecureStore.setItemAsync(AUTH_EMAIL_KEY, email.trim().toLowerCase());
-      await SecureStore.setItemAsync(AUTH_ROLE_KEY, user.role || '');
-      await SecureStore.setItemAsync(AUTH_USER_KEY, JSON.stringify(user));
+      await storage.setItem(AUTH_TOKEN_KEY, token);
+      await storage.setItem(AUTH_EMAIL_KEY, email.trim().toLowerCase());
+      await storage.setItem(AUTH_ROLE_KEY, user.role || '');
+      await storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
       setStoredEmail(email.trim().toLowerCase());
       setStatusMessage('Signed in successfully.');
       navigation?.navigate(user.role === 'donor' ? 'Donor' : 'Requester');
@@ -86,10 +86,10 @@ export default function Login({ navigation, route }) {
   }
 
   async function handleClearSession() {
-    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(AUTH_EMAIL_KEY);
-    await SecureStore.deleteItemAsync(AUTH_ROLE_KEY);
-    await SecureStore.deleteItemAsync(AUTH_USER_KEY);
+    await storage.deleteItem(AUTH_TOKEN_KEY);
+    await storage.deleteItem(AUTH_EMAIL_KEY);
+    await storage.deleteItem(AUTH_ROLE_KEY);
+    await storage.deleteItem(AUTH_USER_KEY);
     setStoredEmail('');
     setStatusMessage('Local session cleared.');
   }

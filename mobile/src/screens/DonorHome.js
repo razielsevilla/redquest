@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, SafeAreaView, Animated } from 'react-native';
 import { XPBar } from '../components/Shared';
 
 export default function DonorHome({ navigation }) {
   const [isAvailable, setIsAvailable] = useState(true);
+  const [isOnCooldown, setIsOnCooldown] = useState(false);
+  const [isLevelUpAvailable, setIsLevelUpAvailable] = useState(true);
+
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+
+  useEffect(() => {
+    if (isLevelUpAvailable) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+
+      // Auto-dismiss after 5 seconds
+      const timer = setTimeout(() => {
+        setIsLevelUpAvailable(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -100,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isLevelUpAvailable]);
 
   return (
     <SafeAreaView style={styles.container}>
+      <Animated.View style={[styles.levelUpBanner, { transform: [{ translateY: slideAnim }] }]}>
+        <Text style={styles.levelUpText}>🎉 Level up available! Tap to claim.</Text>
+      </Animated.View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.greeting}>👋 Good morning, Juan!</Text>
         </View>
 
         <View style={styles.availabilityCard}>
-          <Text style={styles.availabilityText}>Available for quests: {isAvailable ? 'ON' : 'OFF'}</Text>
-          <Switch 
-            value={isAvailable} 
-            onValueChange={setIsAvailable} 
+          <View>
+            <Text style={styles.availabilityText}>Available for quests: {isAvailable ? 'ON' : 'OFF'}</Text>
+            {!isAvailable && <Text style={styles.cooldownText}>Cooldown: 56 days</Text>}
+          </View>
+          <Switch
+            value={isAvailable}
+            onValueChange={setIsAvailable}
             trackColor={{ false: '#374151', true: '#E24B4A' }}
             thumbColor={'#fff'}
           />
@@ -25,7 +57,7 @@ export default function DonorHome({ navigation }) {
         <View style={styles.profileSummary}>
           <Text style={styles.bloodType}>Blood type: <Text style={styles.boldRed}>O+</Text></Text>
           <XPBar currentXP={1240} targetXP={2000} level={4} />
-          
+
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>7</Text>
@@ -52,12 +84,13 @@ export default function DonorHome({ navigation }) {
         </View>
 
         {/* Temporary button to trigger Quest Alert for demonstration */}
-        <TouchableOpacity 
-          style={styles.demoAlertButton} 
+        <TouchableOpacity
+          style={styles.demoAlertButton}
           onPress={() => navigation.navigate('QuestAlert')}
         >
           <Text style={styles.demoAlertText}>Demo: Trigger Quest Alert</Text>
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -65,7 +98,29 @@ export default function DonorHome({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
-  scrollContent: { padding: 20 },
+  levelUpBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#10B981',
+    padding: 16,
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelUpText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cooldownText: {
+    color: '#E24B4A',
+    fontSize: 14,
+    marginTop: 4,
+    fontWeight: '600'
+  },
+  scrollContent: { padding: 20, paddingTop: 40 },
   header: { marginBottom: 20 },
   greeting: { color: '#F9FAFB', fontSize: 24, fontWeight: 'bold' },
   availabilityCard: {

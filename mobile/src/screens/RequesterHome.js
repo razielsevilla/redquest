@@ -7,7 +7,7 @@ export default function RequesterHome({ navigation }) {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.headerTitle}>RedQuest</Text>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.primaryCta}
           onPress={() => navigation.navigate('PostRequest')}
         >
@@ -16,8 +16,8 @@ export default function RequesterHome({ navigation }) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your recent requests (1)</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.requestCard}
             onPress={() => navigation.navigate('RequestStatus')}
           >

@@ -8,7 +8,7 @@ export default function QuestComplete({ navigation }) {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.confettiIcon}>🎉</Text>
         <Text style={styles.title}>Quest Complete!</Text>
-        
+
         <Text style={styles.thankYouText}>Thank you, Juan.</Text>
         <Text style={styles.subtitle}>You may have saved a life.</Text>
 
@@ -28,8 +28,8 @@ export default function QuestComplete({ navigation }) {
         <TouchableOpacity style={styles.shareButton}>
           <Text style={styles.shareButtonText}>Share your story</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.homeButton}
           onPress={() => navigation.navigate('Donor')}
         >

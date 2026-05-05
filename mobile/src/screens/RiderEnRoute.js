@@ -37,7 +37,7 @@ export default function RiderEnRoute({ navigation }) {
         <View style={styles.spacer} />
 
         {/* Skipped S09 (QR Code), so this jumps to S10 */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={() => navigation.navigate('QuestComplete')}
         >

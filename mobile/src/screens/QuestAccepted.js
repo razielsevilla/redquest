@@ -7,7 +7,7 @@ export default function QuestAccepted({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Quest accepted!</Text>
-        
+
         <View style={styles.dispatchBox}>
           <Text style={styles.checkIcon}>✓</Text>
           <Text style={styles.dispatchText}>A rider has been dispatched to you.</Text>
@@ -32,7 +32,7 @@ export default function QuestAccepted({ navigation }) {
 
         <Text style={styles.instructionText}>Please be ready outside your location.</Text>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.demoNextButton}
           onPress={() => navigation.navigate('RiderEnRoute')}
         >
@@ -41,7 +41,7 @@ export default function QuestAccepted({ navigation }) {
 
         <View style={styles.spacer} />
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => navigation.navigate('Donor')}
         >

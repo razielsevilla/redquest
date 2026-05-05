@@ -11,7 +11,7 @@ export const UrgencyBadge = ({ level }) => {
   let bgColor = '#4B5563'; // standard gray
   if (level === 'urgent') bgColor = '#F59E0B'; // amber
   if (level === 'critical') bgColor = '#EF4444'; // red
-  
+
   return (
     <View style={[styles.urgencyBadge, { backgroundColor: bgColor }]}>
       <Text style={styles.urgencyText}>{level.toUpperCase()}</Text>

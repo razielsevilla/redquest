@@ -8,22 +8,25 @@ const urgencies = [
   { id: 'urgent', label: 'Urgent (within 20 min)', color: '#F59E0B' },
   { id: 'critical', label: 'Critical (within 10 min)', color: '#E24B4A' },
 ];
+const hospitals = ['St. Luke\'s BGC', 'Makati Medical Center', 'Philippine General Hospital', 'Asian Hospital'];
 
 export default function PostRequest({ navigation }) {
   const [selectedBlood, setSelectedBlood] = useState('O+');
   const [selectedUnit, setSelectedUnit] = useState('2');
   const [selectedUrgency, setSelectedUrgency] = useState('urgent');
+  const [selectedHospital, setSelectedHospital] = useState(hospitals[0]);
+  const [showHospitals, setShowHospitals] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        
+
         <View style={styles.field}>
           <Text style={styles.label}>Blood type needed</Text>
           <View style={styles.grid}>
             {bloodTypes.map(type => (
-              <TouchableOpacity 
-                key={type} 
+              <TouchableOpacity
+                key={type}
                 style={[styles.gridItem, selectedBlood === type && styles.gridItemActive]}
                 onPress={() => setSelectedBlood(type)}
               >
@@ -37,8 +40,8 @@ export default function PostRequest({ navigation }) {
           <Text style={styles.label}>Units needed</Text>
           <View style={styles.row}>
             {units.map(unit => (
-              <TouchableOpacity 
-                key={unit} 
+              <TouchableOpacity
+                key={unit}
                 style={[styles.rowItem, selectedUnit === unit && styles.rowItemActive]}
                 onPress={() => setSelectedUnit(unit)}
               >
@@ -50,17 +53,30 @@ export default function PostRequest({ navigation }) {
 
         <View style={styles.field}>
           <Text style={styles.label}>Hospital</Text>
-          <TouchableOpacity style={styles.selectInput}>
-            <Text style={styles.selectText}>St. Luke's BGC</Text>
-            <Text style={styles.checkIcon}>✓</Text>
+          <TouchableOpacity style={styles.selectInput} onPress={() => setShowHospitals(!showHospitals)}>
+            <Text style={styles.selectText}>{selectedHospital}</Text>
+            <Text style={styles.checkIcon}>{showHospitals ? '▲' : '▼'}</Text>
           </TouchableOpacity>
+          {showHospitals && (
+            <View style={styles.dropdown}>
+              {hospitals.map(h => (
+                <TouchableOpacity
+                  key={h}
+                  style={styles.dropdownItem}
+                  onPress={() => { setSelectedHospital(h); setShowHospitals(false); }}
+                >
+                  <Text style={[styles.dropdownText, selectedHospital === h && styles.dropdownTextActive]}>{h}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Urgency</Text>
           {urgencies.map(urgency => (
-            <TouchableOpacity 
-              key={urgency.id} 
+            <TouchableOpacity
+              key={urgency.id}
               style={styles.radioRow}
               onPress={() => setSelectedUrgency(urgency.id)}
             >
@@ -74,7 +90,7 @@ export default function PostRequest({ navigation }) {
 
         <View style={styles.field}>
           <Text style={styles.label}>Notes (optional)</Text>
-          <TextInput 
+          <TextInput
             style={styles.textInput}
             placeholder="e.g. Post-surgery, ICU bed 3"
             placeholderTextColor="#6B7280"
@@ -86,7 +102,7 @@ export default function PostRequest({ navigation }) {
           <Text style={styles.feeSub}>Rider cost, paid by you</Text>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.submitButton}
           onPress={() => navigation.navigate('RequestStatus')}
         >
@@ -138,7 +154,23 @@ const styles = StyleSheet.create({
     borderColor: '#374151'
   },
   selectText: { color: '#F9FAFB', fontSize: 16 },
-  checkIcon: { color: '#10B981', fontSize: 18, fontWeight: 'bold' },
+  checkIcon: { color: '#9CA3AF', fontSize: 14, fontWeight: 'bold' },
+  dropdown: {
+    backgroundColor: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    marginTop: -4,
+  },
+  dropdownItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  dropdownText: { color: '#D1D5DB', fontSize: 16 },
+  dropdownTextActive: { color: '#E24B4A', fontWeight: 'bold' },
   radioRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   radioOuter: {
     width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#6B7280',

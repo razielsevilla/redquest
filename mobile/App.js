@@ -15,29 +15,58 @@ import QuestComplete from './src/screens/QuestComplete';
 import PostRequest from './src/screens/PostRequest';
 import RequestStatus from './src/screens/RequestStatus';
 import Onboarding from './src/screens/Onboarding';
-
+import Quests from './src/screens/Quests';
+import Badges from './src/screens/Badges';
+import Profile from './src/screens/Profile';
+import { Ionicons } from '@expo/vector-icons';
 
 
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+function PlaceholderScreen({ route }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: '#F9FAFB', fontSize: 18 }}>{route.name} Screen</Text>
+    </View>
+  );
+}
+
 function DonorTabs() {
   return (
-    <Tab.Navigator screenOptions={{ 
+    <Tab.Navigator screenOptions={({ route }) => ({
       headerShown: false,
       tabBarStyle: { backgroundColor: '#1F2937', borderTopColor: '#374151' },
       tabBarActiveTintColor: '#E24B4A',
-      tabBarInactiveTintColor: '#9CA3AF'
-    }}>
+      tabBarInactiveTintColor: '#9CA3AF',
+      tabBarIcon: ({ focused, color, size }) => {
+        let iconName;
+
+        if (route.name === 'Home') {
+          iconName = focused ? 'home' : 'home-outline';
+        } else if (route.name === 'Quests') {
+          iconName = focused ? 'map' : 'map-outline';
+        } else if (route.name === 'Badges') {
+          iconName = focused ? 'medal' : 'medal-outline';
+        } else if (route.name === 'Profile') {
+          iconName = focused ? 'person' : 'person-outline';
+        }
+
+        return <Ionicons name={iconName} size={size} color={color} />;
+      },
+    })}>
       <Tab.Screen name="Home" component={DonorHome} options={{ title: 'Home' }} />
+      <Tab.Screen name="Quests" component={Quests} options={{ title: 'Quests' }} />
+      <Tab.Screen name="Badges" component={Badges} options={{ title: 'Badges' }} />
+      <Tab.Screen name="Profile" component={Profile} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );
 }
 
 function RequesterTabs() {
   return (
-    <Tab.Navigator screenOptions={{ 
+    <Tab.Navigator screenOptions={{
       headerShown: false,
       tabBarStyle: { backgroundColor: '#1F2937', borderTopColor: '#374151' },
       tabBarActiveTintColor: '#E24B4A',

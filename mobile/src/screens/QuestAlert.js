@@ -12,31 +12,31 @@ export default function QuestAlert({ navigation }) {
 
         <View style={styles.questBox}>
           <Text style={styles.questHeader}>URGENT QUEST</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.label}>Blood type needed:</Text>
             <View style={styles.bloodTypeBadge}>
               <Text style={styles.bloodTypeText}>💧 O+</Text>
             </View>
           </View>
-          
+
           <Text style={styles.detailText}>2 units</Text>
           <Text style={styles.detailText}>St. Luke's BGC</Text>
           <Text style={styles.detailText}>1.3 km from you</Text>
-          
+
           <View style={styles.infoBox}>
             <Text style={styles.infoText}>A rider will pick you up. Transport is covered.</Text>
           </View>
         </View>
 
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.acceptButton}
             onPress={() => navigation.navigate('QuestAccepted')}
           >
             <Text style={styles.acceptButtonText}>✓ Accept Quest</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.declineButton}
             onPress={() => navigation.goBack()}
           >
