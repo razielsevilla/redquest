@@ -87,17 +87,17 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 - [x] GET `/requests/:id` polling: returns current status including rider ETA
 
 **Mobile Dev**
-- [ ] Requester home screen with "Post a Blood Request" CTA
-- [ ] Post request form: blood type selector, units, hospital dropdown (from seeded list), urgency radio
-- [ ] Request status tracking screen: status steps (Searching → Matched → Dispatched), polls every 5s
-- [ ] "Donor matched" state: shows rider name, plate, ETA
-- [ ] Donor home screen: availability toggle, blood type display, basic profile info
+- [x] Requester home screen with "Post a Blood Request" CTA
+- [x] Post request form: blood type selector, units, hospital dropdown (from seeded list), urgency radio
+- [x] Request status tracking screen: status steps (Searching → Matched → Dispatched), polls every 5s
+- [x] "Donor matched" state: shows rider name, plate, ETA
+- [x] Donor home screen: availability toggle, blood type display, basic profile info
 
 **Designer**
-- [ ] High-fidelity: Post request form
-- [ ] High-fidelity: Request status tracking screen (both Searching and Matched states)
-- [ ] High-fidelity: Donor home screen
-- [ ] Hand off all remaining screens to Mobile Dev — designer shifts to pitch deck from Day 3
+- [x] High-fidelity: Post request form
+- [x] High-fidelity: Request status tracking screen (both Searching and Matched states)
+- [x] High-fidelity: Donor home screen
+- [x] Hand off all remaining screens to Mobile Dev — designer shifts to pitch deck from Day 3
 
 **End of Day 2 checkpoint:** Posting a request triggers a push notification to a matched donor device. ✓
 
@@ -107,20 +107,20 @@ To hit a 4-day deadline, the following are **deferred to post-hackathon**:
 **Theme:** The donor-side loop is complete; XP is awarded; demo path is end-to-end
 
 **Backend Dev**
-- [ ] GET `/quests/active` — donor's current active quest with all details
-- [ ] POST `/checkin/simulate` — demo-mode endpoint that manually completes a quest (skips QR)
-- [ ] XP award logic on completion: +200 base, +50 urgent, +100 critical; update `users.xp` and `users.level`
-- [ ] Level threshold logic (Recruit → Hero → Legend)
-- [ ] GET `/users/me` returns updated XP, level, donation_count after completion
-- [ ] Deploy latest backend to Railway and smoke-test all endpoints
+- [x] GET `/quests/active` — donor's current active quest with all details
+- [x] POST `/checkin/simulate` — demo-mode endpoint that manually completes a quest (skips QR)
+- [x] XP award logic on completion: +200 base, +50 urgent, +100 critical; update `users.xp` and `users.level`
+- [x] Level threshold logic (Recruit → Hero → Legend)
+- [x] GET `/users/me` returns updated XP, level, donation_count after completion
+- [x] Deploy latest backend to Railway and smoke-test all endpoints
 
 **Mobile Dev**
-- [ ] Quest alert screen: opens from push notification, shows blood type, hospital, distance, countdown timer
-- [ ] Accept and Decline buttons wired to API
-- [ ] Accepted state → rider en route screen: rider name, plate, ETA countdown
-- [ ] "Complete quest" button (calls `/checkin/simulate` for demo — replaces QR flow)
-- [ ] Quest complete screen: "Quest Complete!" heading, XP counter animation, level display
-- [ ] Wire all screens together — full flow navigable without dead ends
+- [x] Quest alert screen: opens from push notification, shows blood type, hospital, distance, countdown timer
+- [x] Accept and Decline buttons wired to API
+- [x] Accepted state → rider en route screen: rider name, plate, ETA countdown
+- [x] "Complete quest" button (calls `/checkin/simulate` for demo — replaces QR flow)
+- [x] Quest complete screen: "Quest Complete!" heading, XP counter animation, level display
+- [x] Wire all screens together — full flow navigable without dead ends
 
 **All team — Evening**
 - [ ] Run the full demo flow end-to-end together (all 3 runs)

@@ -517,6 +517,115 @@ app.post('/quests/:id/decline', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to decline quest' });
   }
 });
+// GET /quests/active
+app.get('/quests/active', authenticateToken, async (req, res) => {
+  try {
+    const activeQuestResult = await pool.query(
+      `SELECT
+         q.*,
+         br.hospital_id, br.blood_type as request_blood_type, br.urgency, br.units_needed,
+         h.name AS hospital_name, h.address AS hospital_address, h.location AS hospital_location,
+         r.status AS rider_status, r.rider_name, r.plate_number, r.eta_minutes
+       FROM quests q
+       JOIN blood_requests br ON br.id = q.request_id
+       JOIN hospitals h ON h.id = br.hospital_id
+       LEFT JOIN riders r ON r.quest_id = q.id
+       WHERE q.donor_id = $1 AND q.status IN ('pending', 'accepted')
+       ORDER BY q.created_at DESC
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    const quest = activeQuestResult.rows[0];
+    if (!quest) {
+      return res.status(404).json({ error: 'No active quest found' });
+    }
+
+    res.json({ quest });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch active quest' });
+  }
+});
+
+// POST /checkin/simulate
+app.post('/checkin/simulate', authenticateToken, async (req, res) => {
+  try {
+    const { quest_id } = req.body;
+
+    const questResult = await pool.query(
+      `SELECT q.*, br.urgency 
+       FROM quests q
+       JOIN blood_requests br ON br.id = q.request_id
+       WHERE q.id = $1`,
+      [quest_id]
+    );
+
+    const quest = questResult.rows[0];
+    if (!quest) {
+      return res.status(404).json({ error: 'Quest not found' });
+    }
+
+    if (quest.donor_id !== req.user.id) {
+      return res.status(403).json({ error: 'This quest belongs to another donor' });
+    }
+
+    if (quest.status !== 'accepted') {
+      return res.status(400).json({ error: 'Quest must be accepted to check in' });
+    }
+
+    // Mark quest as completed
+    await pool.query(`UPDATE quests SET status = 'completed', responded_at = NOW() WHERE id = $1`, [quest_id]);
+    
+    // Mark blood request as complete
+    await pool.query(`UPDATE blood_requests SET status = 'complete', updated_at = NOW() WHERE id = $1`, [quest.request_id]);
+    
+    // Calculate XP
+    let xpGained = 200;
+    if (quest.urgency === 'urgent') xpGained += 50;
+    else if (quest.urgency === 'critical') xpGained += 100;
+
+    // Get current user stats
+    const userResult = await pool.query(`SELECT xp, level, donation_count FROM users WHERE id = $1`, [req.user.id]);
+    const user = userResult.rows[0];
+    
+    const newXpTotal = (user.xp || 0) + xpGained;
+    const newDonationCount = (user.donation_count || 0) + 1;
+    
+    // Level logic
+    const getLevel = (xp) => {
+      if (xp >= 12000) return 7; // Elite
+      if (xp >= 6000) return 6;  // Legend
+      if (xp >= 3000) return 5;  // Champion
+      if (xp >= 1500) return 4;  // Hero
+      if (xp >= 700) return 3;   // Guardian
+      if (xp >= 300) return 2;   // Responder
+      return 1;                  // Recruit
+    };
+
+    const newLevel = getLevel(newXpTotal);
+    const leveledUp = newLevel > user.level;
+
+    await pool.query(
+      `UPDATE users 
+       SET xp = $1, level = $2, donation_count = $3
+       WHERE id = $4`,
+      [newXpTotal, newLevel, newDonationCount, req.user.id]
+    );
+
+    res.json({
+      message: 'Quest completed successfully',
+      xp_gained: xpGained,
+      new_xp: newXpTotal,
+      leveled_up: leveledUp,
+      new_level: newLevel
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to complete checkin' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
