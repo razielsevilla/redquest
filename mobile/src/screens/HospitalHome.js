@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,26 +12,43 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Sample data ────────────────────────────────────────────────
-const RECENT_REQUESTS = [
+const ACTIVE_DELIVERIES = [
   {
     id: '1',
+    name: 'Jitesh Kumar',
     bloodType: 'O+',
-    urgency: 'Urgent',
-    urgencyColor: '#F59E0B',
-    urgencyBg: '#FFFBEB',
-    date: 'May 4',
-    hospital: "St. Luke's BGC",
-    status: 'Donor matched',
-    statusColor: '#22C55E',
-    statusBg: '#F0FDF4',
+    units: 2,
+    status: 'In Transit',
+    statusColor: '#3B82F6',
+    statusBg: '#EFF6FF',
+    eta: '12 mins',
+  },
+  {
+    id: '2',
+    name: 'Sarah Johnson',
+    bloodType: 'A+',
+    units: 1,
+    status: 'Collection',
+    statusColor: '#F59E0B',
+    statusBg: '#FFFBEB',
+    eta: '25 mins',
   },
 ];
 
+const STOCK_TYPES = [
+  { type: 'A+',  units: 18 },
+  { type: 'B+',  units: 17 },
+  { type: 'O+',  units: 2  },
+  { type: 'AB+', units: 17 },
+];
+
 // ─── Component ──────────────────────────────────────────────────
-export default function RequesterHome({ navigation }) {
-  // Staggered entrance animations (4 sections)
+export default function HospitalHome({ navigation }) {
+  const [hasNotification, setHasNotification] = useState(true);
+
+  // Staggered entrance animations (5 sections)
   const cardAnims = useRef(
-    Array.from({ length: 4 }, () => ({
+    Array.from({ length: 5 }, () => ({
       opacity:    new Animated.Value(0),
       translateY: new Animated.Value(20),
     }))
@@ -75,11 +92,15 @@ export default function RequesterHome({ navigation }) {
         <Stagger index={0}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.appName}>RedQuest</Text>
-              <Text style={styles.appSub}>Family Portal</Text>
+              <Text style={styles.hospitalName}>City General Hospital</Text>
+              <Text style={styles.hospitalSub}>Emergency Requests</Text>
             </View>
-            <TouchableOpacity style={styles.bellWrap}>
+            <TouchableOpacity
+              style={styles.bellWrap}
+              onPress={() => setHasNotification(false)}
+            >
               <Ionicons name="notifications-outline" size={24} color="#D32F2F" />
+              {hasNotification && <View style={styles.bellDot} />}
             </TouchableOpacity>
           </View>
         </Stagger>
@@ -89,76 +110,81 @@ export default function RequesterHome({ navigation }) {
           <View style={styles.statsRow}>
             <View style={styles.statChip}>
               <Ionicons name="pulse" size={18} color="#3B82F6" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>1</Text>
+              <Text style={styles.statChipValue}>5</Text>
               <Text style={styles.statChipLabel}>Active</Text>
             </View>
             <View style={styles.statChip}>
               <Ionicons name="time-outline" size={18} color="#F59E0B" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>0</Text>
+              <Text style={styles.statChipValue}>3</Text>
               <Text style={styles.statChipLabel}>Pending</Text>
             </View>
             <View style={styles.statChip}>
               <Ionicons name="checkmark-circle-outline" size={18} color="#22C55E" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>3</Text>
-              <Text style={styles.statChipLabel}>Fulfilled</Text>
+              <Text style={styles.statChipValue}>28</Text>
+              <Text style={styles.statChipLabel}>Today</Text>
             </View>
           </View>
         </Stagger>
 
-        {/* ── POST REQUEST CTA ── */}
+        {/* ── CREATE NEW REQUEST ── */}
         <Stagger index={2}>
           <TouchableOpacity
             style={styles.createBtn}
             activeOpacity={0.88}
-            onPress={() => navigation.navigate('PostRequest')}
+            onPress={() => navigation.navigate('CreateBloodRequest')}
           >
             <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.createBtnText}>Post a Blood Request</Text>
+            <Text style={styles.createBtnText}>Create New Request</Text>
           </TouchableOpacity>
         </Stagger>
 
-        {/* ── RECENT REQUESTS ── */}
+        {/* ── ACTIVE DELIVERIES ── */}
         <Stagger index={3}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Recent Requests</Text>
+            <Text style={styles.sectionTitle}>Active Deliveries</Text>
 
-            {RECENT_REQUESTS.map((req) => (
-              <TouchableOpacity
-                key={req.id}
-                style={styles.requestCard}
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('RequestStatus')}
+            {ACTIVE_DELIVERIES.map((d, i) => (
+              <View
+                key={d.id}
+                style={[
+                  styles.deliveryCard,
+                  i < ACTIVE_DELIVERIES.length - 1 && styles.deliveryCardBorder,
+                ]}
               >
-                <View style={styles.cardTop}>
-                  {/* Left info */}
-                  <View style={styles.cardLeft}>
-                    <View style={styles.cardRow}>
-                      <View style={styles.bloodBadge}>
-                        <Text style={styles.bloodBadgeText}>{req.bloodType}</Text>
-                      </View>
-                      <View style={[styles.urgencyBadge, { backgroundColor: req.urgencyBg }]}>
-                        <Text style={[styles.urgencyBadgeText, { color: req.urgencyColor }]}>
-                          {req.urgency}
-                        </Text>
-                      </View>
-                      <Text style={styles.dateText}>{req.date}</Text>
-                    </View>
-                    <Text style={styles.hospitalText}>{req.hospital}</Text>
+                {/* Left info */}
+                <View style={styles.deliveryLeft}>
+                  <Text style={styles.deliveryName}>{d.name}</Text>
+                  <Text style={styles.deliveryBlood}>Blood Type:</Text>
+                  <Text style={styles.deliveryBloodType}>{d.bloodType}</Text>
+                  <Text style={styles.deliveryUnits}>{d.units} units</Text>
+                </View>
+
+                {/* Right status + ETA */}
+                <View style={styles.deliveryRight}>
+                  <View style={[styles.statusBadge, { backgroundColor: d.statusBg }]}>
+                    <Text style={[styles.statusBadgeText, { color: d.statusColor }]}>
+                      {d.status}
+                    </Text>
                   </View>
-
-                  {/* Right arrow */}
-                  <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+                  <Text style={styles.deliveryEta}>ETA: {d.eta}</Text>
                 </View>
-
-                {/* Status row */}
-                <View style={[styles.statusBadge, { backgroundColor: req.statusBg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: req.statusColor }]} />
-                  <Text style={[styles.statusText, { color: req.statusColor }]}>
-                    {req.status}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              </View>
             ))}
+          </View>
+        </Stagger>
+
+        {/* ── AVAILABLE STOCK ── */}
+        <Stagger index={4}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Available Stock</Text>
+            <View style={styles.stockGrid}>
+              {STOCK_TYPES.map(({ type, units }) => (
+                <View key={type} style={styles.stockChip}>
+                  <Text style={styles.stockType}>{type}</Text>
+                  <Text style={styles.stockUnits}>{units} units</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </Stagger>
       </ScrollView>
@@ -185,13 +211,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 4,
   },
-  appName: {
-    fontSize: 22,
+  hospitalName: {
+    fontSize: 20,
     fontWeight: '800',
-    color: '#D32F2F',
+    color: '#1A1A1A',
     letterSpacing: -0.3,
   },
-  appSub: {
+  hospitalSub: {
     fontSize: 13,
     color: '#888888',
     marginTop: 2,
@@ -199,6 +225,15 @@ const styles = StyleSheet.create({
   bellWrap: {
     position: 'relative',
     padding: 4,
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D32F2F',
   },
 
   // ── Stat chips
@@ -276,76 +311,82 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // ── Request card
-  requestCard: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-  },
-  cardTop: {
+  // ── Delivery cards
+  deliveryCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    paddingVertical: 12,
   },
-  cardLeft: {
+  deliveryCardBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  deliveryLeft: {
     flex: 1,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  deliveryName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  deliveryBlood: {
+    fontSize: 12,
+    color: '#888888',
+  },
+  deliveryBloodType: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  deliveryUnits: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 4,
+  },
+  deliveryRight: {
+    alignItems: 'flex-end',
     gap: 8,
-    marginBottom: 8,
+    paddingTop: 2,
   },
-  bloodBadge: {
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
+  statusBadge: {
     paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderRadius: 20,
   },
-  bloodBadgeText: {
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  deliveryEta: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 4,
+  },
+
+  // ── Stock grid
+  stockGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  stockChip: {
+    flex: 1,
+    minWidth: '20%',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  stockType: {
     fontSize: 14,
     fontWeight: '800',
     color: '#D32F2F',
   },
-  urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  urgencyBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#AAAAAA',
-  },
-  hospitalText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-
-  // ── Status badge
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
+  stockUnits: {
+    fontSize: 11,
+    color: '#888888',
+    marginTop: 3,
   },
 });

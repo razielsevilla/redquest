@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, SafeAreaView, StatusBar,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as storage from '../lib/storage';
+
+const MENU_ITEMS = [
+  { icon: 'notifications-outline', label: 'Notifications',       chevron: true },
+  { icon: 'lock-closed-outline',   label: 'Privacy and Security', chevron: true },
+  { icon: 'help-circle-outline',   label: 'Help and Support',     chevron: true },
+];
 
 export default function Profile({ navigation }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    async function loadUser() {
+    (async () => {
       const userStr = await storage.getItem('redquest.authUser');
-      if (userStr) {
-        setUser(JSON.parse(userStr));
-      }
-    }
-    loadUser();
+      if (userStr) setUser(JSON.parse(userStr));
+    })();
   }, []);
 
   const handleLogout = async () => {
@@ -20,166 +27,266 @@ export default function Profile({ navigation }) {
     await storage.deleteItem('redquest.authEmail');
     await storage.deleteItem('redquest.authRole');
     await storage.deleteItem('redquest.authUser');
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
+  const initials = user?.name
+    ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </Text>
+    <SafeAreaView style={styles.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── Avatar ── */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
-          <Text style={styles.userRole}>{user?.role ? user.role.toUpperCase() : 'DONOR'}</Text>
+          <View style={styles.rolePill}>
+            <Text style={styles.rolePillText}>
+              {user?.role ? user.role.replace('_', ' ').toUpperCase() : 'DONOR'}
+            </Text>
+          </View>
         </View>
 
+        {/* ── Account Details ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Details</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email || 'user@example.com'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone</Text>
-            <Text style={styles.infoValue}>{user?.phone || '+63 917 000 0000'}</Text>
-          </View>
-
-          {user?.role === 'donor' && (
+          <View style={styles.card}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Blood Type</Text>
-              <Text style={styles.infoValueBlood}>{user?.blood_type || 'O+'}</Text>
+              <View style={styles.infoIconWrap}>
+                <Ionicons name="mail-outline" size={16} color="#D32F2F" />
+              </View>
+              <View style={styles.infoBody}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{user?.email || 'user@example.com'}</Text>
+              </View>
             </View>
-          )}
+
+            <View style={[styles.infoRow, styles.infoRowBorder]}>
+              <View style={styles.infoIconWrap}>
+                <Ionicons name="call-outline" size={16} color="#D32F2F" />
+              </View>
+              <View style={styles.infoBody}>
+                <Text style={styles.infoLabel}>Phone</Text>
+                <Text style={styles.infoValue}>{user?.phone || '+63 917 000 0000'}</Text>
+              </View>
+            </View>
+
+            {user?.role === 'donor' && (
+              <View style={[styles.infoRow, styles.infoRowBorder]}>
+                <View style={styles.infoIconWrap}>
+                  <Ionicons name="water-outline" size={16} color="#D32F2F" />
+                </View>
+                <View style={styles.infoBody}>
+                  <Text style={styles.infoLabel}>Blood Type</Text>
+                  <Text style={[styles.infoValue, { color: '#D32F2F', fontWeight: '800' }]}>
+                    {user?.blood_type || 'O+'}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
         </View>
 
+        {/* ── Preferences ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Notifications</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Privacy and Security</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Help and Support</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
+          <View style={styles.card}>
+            {MENU_ITEMS.map((item, idx) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[styles.menuItem, idx > 0 && styles.menuItemBorder]}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuLeft}>
+                  <View style={styles.menuIconWrap}>
+                    <Ionicons name={item.icon} size={18} color="#555555" />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#CCCCCC" />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Log Out</Text>
+        {/* ── Logout ── */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+          <Ionicons name="log-out-outline" size={18} color="#D32F2F" />
+          <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  root: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#F5F5F7',
   },
-  container: {
-    padding: 24,
+  scroll: {
+    paddingHorizontal: 18,
+    paddingBottom: 40,
   },
-  header: {
+
+  // Avatar section
+  avatarSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 28,
   },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#374151',
+  avatarCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#D32F2F',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#E24B4A',
+    marginBottom: 14,
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
   avatarText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#F9FAFB',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F9FAFB',
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    letterSpacing: -0.3,
+    marginBottom: 8,
   },
-  userRole: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    letterSpacing: 1,
+  rolePill: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 14,
   },
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D32F2F',
+    letterSpacing: 0.5,
+  },
+
+  // Section
   section: {
-    marginBottom: 32,
+    marginBottom: 18,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#F9FAFB',
-    marginBottom: 16,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#888888',
+    marginBottom: 10,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  // Info rows
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
   },
+  infoRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  infoIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoBody: { flex: 1 },
   infoLabel: {
-    color: '#9CA3AF',
-    fontSize: 16,
+    fontSize: 11,
+    color: '#AAAAAA',
+    fontWeight: '600',
+    marginBottom: 2,
   },
   infoValue: {
-    color: '#F9FAFB',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#1A1A1A',
+    fontWeight: '600',
   },
-  infoValueBlood: {
-    color: '#E24B4A',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+
+  // Menu items
   menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#374151',
-  },
-  menuItemText: {
-    color: '#F9FAFB',
-    fontSize: 16,
-  },
-  menuItemArrow: {
-    color: '#9CA3AF',
-    fontSize: 20,
-  },
-  logoutButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#E24B4A',
-    paddingVertical: 16,
-    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 16,
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
   },
-  logoutButtonText: {
-    color: '#E24B4A',
-    fontWeight: 'bold',
-    fontSize: 16,
+  menuItemBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: {
+    fontSize: 15,
+    color: '#1A1A1A',
+    fontWeight: '500',
+  },
+
+  // Logout
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 15,
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  logoutText: {
+    color: '#D32F2F',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
