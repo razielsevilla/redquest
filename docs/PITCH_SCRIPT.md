@@ -16,6 +16,8 @@
 - [ ] Slides advanced to opening slide
 - [ ] FCM push notifications tested on both devices in the venue network
 
+**Note (Hackathon MVP):** For the live demo, the hospital QR check-in and full badge/leaderboard flows may be simulated. If QR scanning is not available on stage, use the recorded demo or the `/checkin/simulate` endpoint; show badges/leaderboard as screenshots if needed.
+
 ---
 
 ## The Script

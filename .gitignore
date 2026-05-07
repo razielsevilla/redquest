@@ -1,0 +1,22 @@
+# Environments
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Mac/Windows system files
+.DS_Store
+Thumbs.db
+
+# Other
+coverage/
+dist/
+build/
+.npm/

@@ -1,441 +1,129 @@
 # RedQuest — UI Flows
 
-**Version:** 1.0 (Hackathon MVP)  
-**Platform:** React Native (iOS + Android)  
-**Design language:** Deep red primary `#E24B4A`, clean white surfaces, bold sans-serif type
-
----
-
-## Screen Index
-
-| Screen | Role | Priority |
-|---|---|---|
-| S01 — Splash | All | P0 |
-| S02 — Onboarding | All | P0 |
-| S03 — Register | All | P0 |
-| S04 — Login | All | P0 |
-| S05 — Donor Home | Donor | P0 |
-| S06 — Quest Alert | Donor | P0 |
-| S07 — Quest Accepted | Donor | P0 |
-| S08 — Rider En Route | Donor | P0 |
-| S09 — QR Check-in | Donor | P0 |
-| S10 — Quest Complete | Donor | P0 |
-| S11 — Donor Profile | Donor | P1 |
-| S12 — Donation History | Donor | P1 |
-| S13 — Leaderboard | Donor | P1 |
-| S14 — Requester Home | Requester | P0 |
-| S15 — Post Request | Requester | P0 |
-| S16 — Request Status | Requester | P0 |
-| S17 — Hospital Dashboard | Hospital Staff | P1 |
-
----
-
-## Flow 1 — Onboarding & Registration
+## Screen Map
 
 ```
-App Launch
-    │
-    ▼
-S01: Splash Screen (2s)
-    RedQuest logo + tagline
-    "Turn blood donation into a quest"
-    │
-    ▼
-S02: Onboarding (3 swipeable cards)
-    Card 1: "Be a hero when it matters"
-    Card 2: "A rider picks you up — no hassle"
-    Card 3: "Earn XP and save lives"
-    [Get Started] button
-    │
-    ├──── "I already have an account" ──► S04 Login
-    │
-    ▼
-S03: Register
-    ┌─────────────────────────────┐
-    │  Full name                  │
-    │  Mobile number              │
-    │  Email address              │
-    │  Password                   │
-    │                             │
-    │  I am a: [Donor] [Family]   │
-    │          [Hospital Staff]   │
-    │                             │
-    │  (If Donor selected):       │
-    │  Blood type: [selector]     │
-    │  A+  A-  B+  B-             │
-    │  O+  O-  AB+ AB-            │
-    │                             │
-    │  [Allow location access]    │
-    │  (system prompt follows)    │
-    │                             │
-    │  [Create Account]           │
-    └─────────────────────────────┘
-    │
-    ▼
-    S05 / S14 / S17 (by role)
-```
-
-**Key decisions:**
-- Blood type selector only appears if role = Donor
-- Location permission is requested inline with explanation ("So we can find you for quests")
-- Requester flow skips blood type
-
----
-
-## Flow 2 — Donor Home & Availability
-
-```
-S05: Donor Home
-    ┌─────────────────────────────┐
-    │  👋 Good morning, Juan!     │
-    │                             │
-    │  [toggle] Available for     │
-    │           quests: ON        │
-    │                             │
-    │  Blood type: O+             │
-    │  Level 4 Hero               │
-    │  ████████░░ 1,240 / 2,000   │
-    │                             │
-    │  ┌──────┐  ┌──────────────┐ │
-    │  │  7   │  │  56 days     │ │
-    │  │dons  │  │  until next  │ │
-    │  └──────┘  └──────────────┘ │
-    │                             │
-    │  Recent quests (2)          │
-    │  Apr 30 · O+ · St. Luke's   │
-    │  Apr 12 · O+ · PGH          │
-    │                             │
-    │  [View full history]        │
-    └─────────────────────────────┘
-    │
-    Bottom nav: Home · Quests · Badges · Profile
-```
-
-**States:**
-- If on cooldown: toggle is disabled, cooldown timer shown in red
-- If level up available: banner animates in at top
-
----
-
-## Flow 3 — Quest Alert & Acceptance (CRITICAL PATH)
-
-This is the most important flow. Every interaction should feel fast and urgent.
-
-```
-[Push notification arrives on locked screen]
-    "🩸 URGENT QUEST — O+ needed · St. Luke's · 1.3 km"
-    │
-    [Donor taps notification]
-    │
-    ▼
-S06: Quest Alert (full-screen modal over home)
-    ┌─────────────────────────────┐
-    │  ⏱ 04:32  [red countdown]  │
-    │                             │
-    │  ┌── URGENT QUEST ─────────┐│
-    │  │                         ││
-    │  │  Blood type needed:     ││
-    │  │  🩸 O+                  ││
-    │  │                         ││
-    │  │  2 units                ││
-    │  │  St. Luke's BGC         ││
-    │  │  1.3 km from you        ││
-    │  │                         ││
-    │  │  A rider will pick      ││
-    │  │  you up. Transport      ││
-    │  │  is covered.            ││
-    │  └─────────────────────────┘│
-    │                             │
-    │  [ ✓ Accept Quest ]         │
-    │  [   Decline       ]        │
-    └─────────────────────────────┘
-
-    If countdown reaches 0:
-    → Modal closes, "Quest expired" toast shown
-    → Returns to S05 Donor Home
-```
-
-**Behavior:**
-- Quest countdown visible and ticking in real time
-- Accept is a large, full-width red button — highest affordance
-- Decline is a smaller, secondary style button
-- Haptic feedback on Accept tap
-- Background shows a subtle pulsing red animation to convey urgency
-
----
-
-```
-[Donor taps Accept Quest]
-    │
-    ▼
-S07: Quest Accepted (confirmation + rider incoming)
-    ┌─────────────────────────────┐
-    │  Quest accepted!            │
-    │                             │
-    │  ✓ A rider has been         │
-    │    dispatched to you.       │
-    │                             │
-    │  ┌─────────────────────────┐│
-    │  │ 🏍️  Ramon Santos        ││
-    │  │     ABC 1234            ││
-    │  │     ETA: 4 minutes      ││
-    │  └─────────────────────────┘│
-    │                             │
-    │  Your destination:          │
-    │  St. Luke's Medical Center  │
-    │  BGC Blood Bank, Floor 2    │
-    │                             │
-    │  Please be ready outside    │
-    │  your location.             │
-    │                             │
-    │  [Can't make it? Cancel]    │
-    └─────────────────────────────┘
+Onboarding ──► Login ──► Register
+                  │
+          ┌───────┴────────┐
+          │                │
+       Donor            Requester
+       Tabs              Tabs
+    ┌────────────┐    ┌───────────────┐
+    │ Home       │    │ Home          │
+    │ Quests     │    │ History       │
+    │ Badges     │    │ Profile       │
+    │ Profile    │    └───────────────┘
+    └────────────┘
+         │
+    QuestAlert ──► QuestAccepted ──► QuestComplete
+                                        (Donor tabs)
+    PostRequest ──► RequestStatus
 ```
 
 ---
 
-```
-[Rider arrives and picks up donor]
-    │
-    ▼
-S08: Rider En Route (in the motorcycle)
-    ┌─────────────────────────────┐
-    │  En route to hospital       │
-    │                             │
-    │  🏥 St. Luke's BGC          │
-    │  Estimated: 12 minutes      │
-    │                             │
-    │  Blood type: O+             │
-    │  Units needed: 2            │
-    │  Floor 2, Blood Bank        │
-    │                             │
-    │  Show your QR at the        │
-    │  blood bank counter.        │
-    │                             │
-    │  [Show my QR code]  →  S09  │
-    └─────────────────────────────┘
-```
+## Onboarding Flow
+
+**Screen: Onboarding**
+- Landing page with RedQuest logo, tagline, and "Get Started" button
+- Swipeable 3-slide intro (Help Instantly / Connect Directly / Save Lives)
+- "I already have an account" link → Login
+- Final slide → Register
 
 ---
 
-```
-S09: QR Code Display
-    ┌─────────────────────────────┐
-    │  Show this at the           │
-    │  blood bank counter         │
-    │                             │
-    │  ┌─────────────────────────┐│
-    │  │                         ││
-    │  │   [QR CODE IMAGE]       ││
-    │  │                         ││
-    │  └─────────────────────────┘│
-    │                             │
-    │  Quest #RQ-2026-0047        │
-    │  Juan dela Cruz · O+        │
-    │                             │
-    │  Valid for 4 hours          │
-    └─────────────────────────────┘
-```
+## Auth Flows
+
+**Screen: Register**
+- Step 1: Role selection — **Donor** or **Requester** (2 cards only)
+- Step 2: Account details (name, email, password)
+- Step 3: Contact info (phone number)
+- Step 4: Blood type selection (A/B/O/AB + Rh factor)
+- Submit → Login screen
+
+**Screen: Login**
+- Logo display with "Sign In" and "Create Account" buttons
+- Tap Sign In → email + password form slides in
+- On success: routes to `DonorTabs` or `RequesterTabs` based on role
 
 ---
 
-```
-[Hospital staff scans QR → API confirms]
-    │
-    ▼
-S10: Quest Complete 🎉
-    ┌─────────────────────────────┐
-    │                             │
-    │  ⭐ Quest Complete!         │
-    │                             │
-    │  Thank you, Juan.           │
-    │  You may have saved a life. │
-    │                             │
-    │  +250 XP earned             │
-    │  [animated XP counter]      │
-    │                             │
-    │  ████████░░ 1,490 / 2,000   │
-    │                             │
-    │  🏅 New badge unlocked!     │
-    │  Speed Hero                 │
-    │  "Accepted a quest in       │
-    │   under 60 seconds"         │
-    │                             │
-    │  [Share your story]         │
-    │  [Back to home]             │
-    └─────────────────────────────┘
-```
+## Donor Flows
 
-**Animations:**
-- XP number counts up from previous total to new total
-- Badge slides up from bottom with a pulse effect
-- Confetti particle effect (subtle, tasteful)
+### Home (DonorTabs > Home)
+- Greeting with first name
+- Verified donor badge
+- Availability toggle (is_available)
+- Blood type + XP bar + level
+- Stats: total donations | days until next eligible
+- Rewards & Points card → Badges screen
+- Recent quests → Quests screen
+- Live quest CTA (if active quest exists):
+  - Status pending → "New Quest Available — Tap to view" → QuestAlert
+  - Status accepted → "Quest in progress — Tap to track" → QuestAccepted
 
----
+### Quest Alert (modal)
+- Notification that blood is needed nearby
+- Shows: hospital name, blood type, urgency badge, distance, units
+- Map placeholder showing nearby pins
+- **Accept** button → QuestAccepted
+- **Decline** button → back to Home (next donor auto-notified)
 
-## Flow 4 — Requester: Post a Request
+### Quest Accepted
+- Confirmation screen: "Quest Accepted!"
+- Status card: "Quest Active — Make your way to the hospital"
+- Destination card: hospital name + address + distance from donor
+- Quest details: blood type, units, priority
+- **"I am On My Way"** button → Donor Home
+- "Can't make it? Cancel" link → Donor Home
 
-```
-S14: Requester Home
-    ┌─────────────────────────────┐
-    │  RedQuest                   │
-    │                             │
-    │  [+ Post a Blood Request]   │  ← primary CTA
-    │                             │
-    │  Your recent requests (1)   │
-    │  ┌─────────────────────────┐│
-    │  │ O+ · Urgent · May 4     ││
-    │  │ St. Luke's BGC          ││
-    │  │ ● Donor matched         ││
-    │  └─────────────────────────┘│
-    └─────────────────────────────┘
-    │
-    [+ Post a Blood Request]
-    │
-    ▼
-S15: Post Request
-    ┌─────────────────────────────┐
-    │  Blood type needed          │
-    │  [A+][A-][B+][B-]           │
-    │  [O+][O-][AB+][AB-]         │
-    │                             │
-    │  Units needed: [1] [2] [3+] │
-    │                             │
-    │  Hospital                   │
-    │  [Search or select]         │
-    │   St. Luke's BGC ✓          │
-    │                             │
-    │  Urgency                    │
-    │  ○ Standard (within 1 hr)   │
-    │  ● Urgent (within 20 min)   │
-    │  ○ Critical (within 10 min) │
-    │                             │
-    │  Notes (optional)           │
-    │  [Post-surgery, ICU bed 3]  │
-    │                             │
-    │  Transport fee: ₱150        │
-    │  (Rider cost, paid by you)  │
-    │                             │
-    │  [Post Request]             │
-    └─────────────────────────────┘
-    │
-    ▼
-S16: Request Status (live tracking)
-    ┌─────────────────────────────┐
-    │  Blood request posted       │
-    │  O+ · Urgent · St. Luke's   │
-    │                             │
-    │  ●──────○──────○──────○     │
-    │  Matching Matched Dispatched Done
-    │                             │
-    │  Searching for nearby       │
-    │  compatible donors...       │
-    │                             │
-    │  [spinner animation]        │
-    │                             │
-    │  ──── updates in real time  │
-    │                             │
-    │  [Cancel request]           │
-    └─────────────────────────────┘
+### Quest Complete
+- XP awarded display
+- Level up celebration (if applicable)
+- Back to Home
 
-    → When donor matched:
-    ┌─────────────────────────────┐
-    │  ✓ Donor found!             │
-    │  Blood type O+              │
-    │  A rider is picking them up │
-    │                             │
-    │  Rider ETA to donor: 4 min  │
-    │  Estimated arrival at       │
-    │  hospital: ~25 minutes      │
-    │                             │
-    │  Please inform the blood    │
-    │  bank to prepare.           │
-    └─────────────────────────────┘
-```
+### Quests Tab
+- History of all quests (completed, declined, expired)
+
+### Badges Tab
+- Achievement badges tied to donation milestones
 
 ---
 
-## Flow 5 — Donor Profile & Badges
+## Requester Flows
 
-```
-S11: Donor Profile
-    ┌─────────────────────────────┐
-    │  [avatar]  Juan dela Cruz   │
-    │            Blood type: O+   │
-    │            Level 4 Hero     │
-    │                             │
-    │  XP Progress                │
-    │  ████████░░ 1,240 / 2,000   │
-    │  760 XP to Level 5          │
-    │                             │
-    │  ┌──────┬──────┬──────────┐ │
-    │  │  7   │  7   │  56 days │ │
-    │  │dons  │lives │  cooldown│ │
-    │  └──────┴──────┴──────────┘ │
-    │                             │
-    │  My Badges (3/7)            │
-    │  🏅 First Blood             │
-    │  ⚡ Speed Hero              │
-    │  🌙 Night Owl               │
-    │  🔒 Triple Threat           │
-    │  🔒 Rare Find               │
-    │  ...                        │
-    │                             │
-    │  [Edit profile]             │
-    │  [Donation history]  → S12  │
-    │  [Leaderboard]       → S13  │
-    └─────────────────────────────┘
-```
+### Home (RequesterTabs > Home)
+- Header: "Requester Portal"
+- Stats row: Active | Completed | Pending requests
+- **"Post New Blood Request"** button → PostRequest
+- Recent requests list (each tappable → RequestStatus)
+- Info tip card
+
+### Post Request
+- Blood type selector (8-type grid)
+- Units needed (1 / 2 / 3+)
+- Hospital picker (dropdown, loads from API)
+- Urgency level radio (Standard / Urgent / Critical)
+- Notes (optional text input)
+- **"Post Request"** → RequestStatus
+
+### Request Status
+- Real-time polling (5s) of request status
+- Shows current status: Matching → Notified → Accepted → Complete
+- Donor info when accepted
+- Status timeline
+
+### History Tab
+- All past requests with status badges
 
 ---
 
-## Navigation Structure
+## Shared
 
-```
-Bottom Tab Bar (Donor App)
-├── Home (S05)
-├── History (S12)
-├── Leaderboard (S13)
-└── Profile (S11)
-
-Bottom Tab Bar (Requester App)
-├── Home (S14)
-└── My Requests (list of S16s)
-
-Modal Overlays
-├── Quest Alert (S06) — triggered by push notification
-├── Quest Complete (S10) — triggered by check-in confirmation
-└── Badge Unlocked — triggered within S10
-```
-
----
-
-## Component Library (Key Components)
-
-### QuestCard
-Used in quest alert and history list.
-- Props: `bloodType`, `urgency`, `hospitalName`, `distanceMeters`, `expiresAt`
-- Urgency colors: standard = gray, urgent = amber, critical = red
-- Shows live countdown if `expiresAt` is in the future
-
-### XPBar
-- Props: `currentXP`, `targetXP`, `level`
-- Animates from previous value on mount
-
-### BloodTypeBadge
-- Props: `type` (e.g. "O+")
-- Large, bold pill with red background
-- Used on quest cards and donor profile
-
-### UrgencyBadge
-- Props: `level` ("standard" | "urgent" | "critical")
-- standard: gray, urgent: amber, critical: red
-
-### StatusTimeline
-- Props: `steps`, `currentStep`
-- Horizontal row of dots with labels, fills left-to-right as status advances
-- Used on requester tracking screen (S16)
-
-### RiderCard
-- Props: `name`, `plate`, `etaMinutes`, `status`
-- Shows motorcycle icon, rider name, plate, and live ETA countdown
+### Profile Tab
+- User avatar (initials)
+- Name + role pill (DONOR or REQUESTER)
+- Account details: email, phone, blood type
+- Preferences menu (Notifications, Privacy, Help)
+- **Log Out** button

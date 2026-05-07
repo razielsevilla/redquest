@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "RedQuest",
+    "slug": "redquest",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#C0001A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.redquest.mobile"
+    },
+    "android": {
+      "package": "com.redquest.mobile",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "apiBaseUrl": "https://redquest-production.up.railway.app",
+      "eas": {
+        "projectId": "fbf24851-427b-4090-8523-1cd4aba12ebb"
+      }
+    },
+    "owner": "emieljamws"
+  }
+}

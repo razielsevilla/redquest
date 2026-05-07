@@ -1,396 +1,63 @@
 # RedQuest — API Specification
 
-**Base URL:** `https://api.redquest.app/v1`  
-**Auth:** Bearer JWT token in `Authorization` header  
-**Format:** All requests and responses are `application/json`  
-**Version:** 1.0 (Hackathon MVP)
+**Base URL:** `https://your-railway-url.up.railway.app`  
+**Auth:** Bearer JWT token in `Authorization` header (all routes except register/login)
 
 ---
 
 ## Authentication
 
-### POST `/auth/register`
+### `POST /auth/register`
 Register a new user.
 
-**Request body:**
+**Body:**
 ```json
 {
-  "name": "Juan dela Cruz",
-  "email": "juan@email.com",
+  "name": "Maria Santos",
+  "email": "maria@email.com",
   "phone": "09171234567",
-  "password": "securepassword",
-  "role": "donor",
+  "password": "password123",
+  "role": "requester",
   "blood_type": "O+",
-  "latitude": 14.5995,
-  "longitude": 120.9842
+  "lat": 14.5995,
+  "lng": 120.9842
 }
 ```
+
+- `role`: `"donor"` | `"requester"` only
+- `blood_type`: required for both roles
 
 **Response `201`:**
 ```json
-{
-  "user": {
-    "id": "uuid",
-    "name": "Juan dela Cruz",
-    "email": "juan@email.com",
-    "role": "donor",
-    "blood_type": "O+",
-    "xp": 0,
-    "level": 1
-  },
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ..."
-}
+{ "user": { "id": "uuid", "name": "Maria Santos", "email": "...", "role": "requester" } }
 ```
-
-**Errors:**
-- `400` — Validation error (missing fields, invalid blood type)
-- `409` — Email already registered
 
 ---
 
-### POST `/auth/login`
-
-**Request body:**
-```json
-{
-  "email": "juan@email.com",
-  "password": "securepassword"
-}
-```
+### `POST /auth/login`
+**Body:** `{ "email": "...", "password": "..." }`
 
 **Response `200`:**
 ```json
-{
-  "user": { "id": "uuid", "name": "...", "role": "donor", ... },
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ..."
-}
-```
-
----
-
-### POST `/auth/refresh`
-Exchange refresh token for new access token.
-
-**Request body:**
-```json
-{ "refresh_token": "eyJ..." }
+{ "token": "jwt_token", "user": { "id": "uuid", "name": "...", "role": "requester", "email": "..." } }
 ```
 
 ---
 
 ## Users
 
-### GET `/users/me`
-Get the authenticated user's profile.
+### `GET /users/me`
+Get current user profile.
 
 **Response `200`:**
 ```json
 {
-  "id": "uuid",
-  "name": "Juan dela Cruz",
-  "email": "juan@email.com",
-  "phone": "09171234567",
-  "role": "donor",
-  "blood_type": "O+",
-  "xp": 1240,
-  "level": 4,
-  "donation_count": 7,
-  "on_cooldown": false,
-  "cooldown_until": null,
-  "badges": [
-    { "slug": "first_blood", "name": "First Blood", "awarded_at": "2026-04-01T10:00:00Z" }
-  ],
-  "is_available": true
-}
-```
-
----
-
-### PATCH `/users/me`
-Update profile fields. Donors should update location frequently.
-
-**Request body (all optional):**
-```json
-{
-  "name": "Juan dela Cruz",
-  "latitude": 14.6020,
-  "longitude": 120.9860,
-  "is_available": true,
-  "device_token": "fcm_token_here"
-}
-```
-
-**Response `200`:** Updated user object.
-
----
-
-## Blood Requests
-
-### POST `/requests`
-Post a new blood request. Requester or hospital staff only.
-
-**Request body:**
-```json
-{
-  "hospital_id": "uuid",
-  "blood_type": "O+",
-  "units_needed": 2,
-  "urgency": "urgent",
-  "notes": "Post-surgery, needed within 2 hours"
-}
-```
-
-**Response `201`:**
-```json
-{
-  "id": "uuid",
-  "blood_type": "O+",
-  "units_needed": 2,
-  "urgency": "urgent",
-  "status": "matching",
-  "hospital": {
-    "id": "uuid",
-    "name": "St. Luke's Medical Center BGC",
-    "address": "5th Ave, Taguig"
-  },
-  "created_at": "2026-05-04T08:00:00Z"
-}
-```
-
-**Errors:**
-- `400` — Invalid blood type or urgency level
-- `404` — Hospital not found
-- `429` — Requester has an active request already open
-
----
-
-### GET `/requests/:id`
-Get full status of a blood request. Polls this for real-time updates.
-
-**Response `200`:**
-```json
-{
-  "id": "uuid",
-  "blood_type": "O+",
-  "urgency": "urgent",
-  "status": "rider_dispatched",
-  "hospital": { "name": "St. Luke's Medical Center BGC" },
-  "active_quest": {
-    "id": "uuid",
-    "donor_blood_type": "O+",
-    "rider": {
-      "name": "Ramon Santos",
-      "plate_number": "ABC 1234",
-      "eta_minutes": 6,
-      "status": "en_route_donor"
-    }
-  },
-  "created_at": "2026-05-04T08:00:00Z"
-}
-```
-
----
-
-### PATCH `/requests/:id/cancel`
-Cancel an open blood request.
-
-**Response `200`:**
-```json
-{ "status": "cancelled", "cancelled_at": "2026-05-04T08:15:00Z" }
-```
-
-**Errors:**
-- `400` — Request already complete or cancelled
-- `403` — Not the requester's own request
-
----
-
-### GET `/requests`
-List requests for the authenticated user (requester) or hospital (staff).
-
-**Query params:** `status`, `limit`, `offset`
-
-**Response `200`:**
-```json
-{
-  "requests": [ { ... }, { ... } ],
-  "total": 12
-}
-```
-
----
-
-## Quests
-
-### GET `/quests/active`
-Get the donor's currently active quest (if any). Poll this after accepting.
-
-**Response `200`:**
-```json
-{
-  "id": "uuid",
-  "status": "accepted",
-  "blood_type": "O+",
-  "urgency": "urgent",
-  "hospital": { "name": "St. Luke's Medical Center BGC", "address": "..." },
-  "distance_meters": 1320,
-  "expires_at": "2026-05-04T08:05:00Z",
-  "rider": {
-    "name": "Ramon Santos",
-    "plate_number": "ABC 1234",
-    "eta_minutes": 4
-  },
-  "xp_reward": 250
-}
-```
-
----
-
-### POST `/quests/:id/accept`
-Donor accepts a quest.
-
-**Response `200`:**
-```json
-{
-  "quest_id": "uuid",
-  "status": "accepted",
-  "rider": {
-    "name": "Ramon Santos",
-    "plate_number": "ABC 1234",
-    "eta_minutes": 4
-  },
-  "message": "A rider is on their way to you. Please be ready."
-}
-```
-
-**Errors:**
-- `400` — Quest has expired or already been accepted by another donor
-- `403` — Donor is on cooldown
-
----
-
-### POST `/quests/:id/decline`
-Donor declines a quest. Anonymous — no data stored linking donor to declination.
-
-**Response `200`:**
-```json
-{ "status": "declined" }
-```
-
----
-
-### GET `/quests/history`
-Donor's past quests (donation history).
-
-**Query params:** `limit`, `offset`
-
-**Response `200`:**
-```json
-{
-  "quests": [
-    {
-      "id": "uuid",
-      "blood_type": "O+",
-      "hospital_name": "St. Luke's Medical Center BGC",
-      "completed_at": "2026-04-01T11:30:00Z",
-      "xp_awarded": 250,
-      "status": "complete"
-    }
-  ],
-  "total": 7
-}
-```
-
----
-
-## Hospital Check-in
-
-### POST `/checkin`
-Hospital staff scans donor QR code to confirm arrival. Triggers XP award.
-
-**Request body:**
-```json
-{
-  "quest_id": "uuid",
-  "donor_id": "uuid"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "status": "complete",
-  "xp_awarded": 250,
-  "new_total_xp": 1490,
-  "level_up": false,
-  "badges_awarded": []
-}
-```
-
-**Errors:**
-- `404` — Quest not found or already completed
-- `403` — Not authorized (must be hospital_staff role)
-
----
-
-### GET `/checkin/qr/:quest_id`
-Generate QR payload for donor to display at hospital.
-
-**Response `200`:**
-```json
-{
-  "qr_data": "redquest://checkin?quest=uuid&donor=uuid&ts=1746345600",
-  "expires_in_hours": 4
-}
-```
-
----
-
-## Gamification
-
-### GET `/leaderboard`
-Top donors by XP.
-
-**Query params:** `city` (optional), `limit` (default 20)
-
-**Response `200`:**
-```json
-{
-  "leaderboard": [
-    {
-      "rank": 1,
-      "name": "Maria Santos",
-      "blood_type": "O-",
-      "xp": 6200,
-      "level": 6,
-      "donation_count": 18
-    }
-  ],
-  "your_rank": 14,
-  "your_xp": 1240
-}
-```
-
----
-
-### GET `/badges`
-List all available badges.
-
-**Response `200`:**
-```json
-{
-  "badges": [
-    {
-      "slug": "first_blood",
-      "name": "First Blood",
-      "description": "Complete your first donation",
-      "xp_bonus": 100,
-      "earned": true,
-      "earned_at": "2026-04-01T11:30:00Z"
-    }
-  ]
+  "user": {
+    "id": "uuid", "name": "...", "email": "...", "phone": "...",
+    "role": "donor", "blood_type": "O+",
+    "location": { "type": "Point", "coordinates": [120.98, 14.56] },
+    "is_available": true, "xp": 450, "level": 2, "donation_count": 3
+  }
 }
 ```
 
@@ -398,77 +65,137 @@ List all available badges.
 
 ## Hospitals
 
-### GET `/hospitals`
-Search for partner hospitals.
+### `GET /hospitals`
+Get all hospitals (for PostRequest dropdown).
 
-**Query params:** `city`, `search` (name search), `limit`
+**Response `200`:**
+```json
+{ "hospitals": [{ "id": "uuid", "name": "St. Luke's Medical Center BGC", "address": "5th Ave, Taguig", "city": "Taguig" }] }
+```
+
+---
+
+## Blood Requests
+
+### `POST /requests`
+Requester posts a blood request. System automatically finds donors within 10 km.
+
+**Body:**
+```json
+{
+  "hospital_id": "uuid",
+  "blood_type": "O+",
+  "units_needed": 2,
+  "urgency": "urgent",
+  "notes": "Post-surgery, ICU bed 3"
+}
+```
+
+- `urgency`: `"standard"` | `"urgent"` | `"critical"`
+
+**Response `201`:**
+```json
+{
+  "request": { "id": "uuid", "status": "matching", ... },
+  "donors": [...],
+  "quests": [...]
+}
+```
+
+---
+
+### `GET /requests/me`
+Get all requests posted by the current Requester.
+
+**Response `200`:**
+```json
+{ "requests": [{ "id": "uuid", "blood_type": "O+", "status": "notified", "hospital_name": "PGH", ... }] }
+```
+
+---
+
+### `GET /requests/:id`
+Get full details of a blood request including quests and donors.
 
 **Response `200`:**
 ```json
 {
-  "hospitals": [
-    {
-      "id": "uuid",
-      "name": "St. Luke's Medical Center BGC",
-      "address": "5th Ave, Taguig",
-      "city": "Taguig",
-      "latitude": 14.5485,
-      "longitude": 121.0467,
-      "is_partner": true
-    }
-  ]
+  "request": { "id": "uuid", "status": "accepted", "hospital_name": "...", "requester": { ... } },
+  "quests": [{ "id": "uuid", "status": "accepted", "donor": { ... } }]
 }
 ```
 
 ---
 
-## WebSocket Events
+## Quests
 
-Connect to: `wss://api.redquest.app/v1/socket`  
-Authenticate by sending `{ "type": "auth", "token": "eyJ..." }` immediately after connection.
+### `GET /quests/active`
+Get current donor's active quest (pending or accepted).
 
-### Server → Client events
-
-| Event | Payload | Description |
-|---|---|---|
-| `quest:new` | `{ quest_id, blood_type, urgency, hospital_name, distance_meters, expires_at }` | New quest alert for donor |
-| `quest:expired` | `{ quest_id }` | Quest expired before donor responded |
-| `request:status` | `{ request_id, status, rider? }` | Status update for requester |
-| `rider:update` | `{ quest_id, eta_minutes, status }` | Rider ETA update |
-| `xp:awarded` | `{ xp_gained, new_total, level_up, new_level?, badges? }` | XP awarded after check-in |
-
-### Client → Server events
-
-| Event | Payload | Description |
-|---|---|---|
-| `location:update` | `{ latitude, longitude }` | Donor updates their location |
-| `subscribe:request` | `{ request_id }` | Requester subscribes to request updates |
-
----
-
-## Error Response Format
-
-All error responses follow this format:
-
+**Response `200`:**
 ```json
 {
-  "error": {
-    "code": "QUEST_EXPIRED",
-    "message": "This quest has already expired. Please wait for the next one.",
-    "status": 400
+  "quest": {
+    "id": "uuid", "status": "pending",
+    "request_blood_type": "O+", "urgency": "urgent", "units_needed": 2,
+    "hospital_name": "St. Luke's BGC", "hospital_address": "5th Ave, Taguig",
+    "distance_meters": 1420
   }
 }
 ```
 
-### Common error codes
+---
 
-| Code | HTTP | Meaning |
-|---|---|---|
-| `INVALID_BLOOD_TYPE` | 400 | Blood type not in accepted list |
-| `DONOR_ON_COOLDOWN` | 400 | Donor must wait before donating again |
-| `QUEST_EXPIRED` | 400 | Quest acceptance window closed |
-| `QUEST_TAKEN` | 409 | Another donor already accepted this quest |
-| `UNAUTHORIZED` | 401 | Missing or invalid JWT |
-| `FORBIDDEN` | 403 | Authenticated but wrong role |
-| `NOT_FOUND` | 404 | Resource does not exist |
-| `DUPLICATE_REQUEST` | 429 | Requester already has an open request |
+### `POST /quests/:id/accept`
+Donor accepts a quest.
+
+**Response `200`:** `{ "questId": "uuid" }`
+
+---
+
+### `POST /quests/:id/decline`
+Donor declines a quest. Next eligible donor is notified automatically.
+
+**Response `200`:** `{ "message": "Quest declined" }`
+
+---
+
+### `GET /quests/history`
+Get donor's completed/declined/expired quest history.
+
+**Response `200`:**
+```json
+{ "quests": [{ "id": "uuid", "status": "completed", "hospital_name": "...", ... }] }
+```
+
+---
+
+## Check-in
+
+### `POST /checkin/simulate`
+Donor marks quest as completed (simulates hospital arrival).
+
+**Body:** `{ "quest_id": "uuid" }`
+
+**Response `200`:**
+```json
+{
+  "message": "Quest completed successfully",
+  "xp_gained": 250,
+  "new_xp": 700,
+  "leveled_up": true,
+  "new_level": 3
+}
+```
+
+---
+
+## Error Responses
+
+| Status | Meaning |
+|---|---|
+| 400 | Bad request / validation error |
+| 401 | Missing or invalid token |
+| 403 | Forbidden (wrong user) |
+| 404 | Resource not found |
+| 500 | Server error |
