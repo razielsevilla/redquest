@@ -5,14 +5,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
-
-const RECENT_REQUESTS = [
-  { id: '1', type: 'O+', hospital: "St. Luke's BGC", status: 'Delivered', statusColor: COLORS.success, statusBg: COLORS.successLight, date: 'Apr 30' },
-  { id: '2', type: 'A+', hospital: 'Makati Med',     status: 'Pending',   statusColor: COLORS.warning, statusBg: COLORS.warningLight, date: 'Apr 28' },
-];
+import { getMyRequests } from '../lib/api';
 
 export default function RequesterHome({ navigation }) {
   const [hasNotification, setHasNotification] = useState(true);
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ active: 0, pending: 0, completed: 0 });
 
   const cardAnims = useRef(
     Array.from({ length: 5 }, () => ({
@@ -22,6 +20,27 @@ export default function RequesterHome({ navigation }) {
   ).current;
 
   useEffect(() => {
+    async function loadRequests() {
+      try {
+        const res = await getMyRequests();
+        if (res?.requests) {
+          setRequests(res.requests);
+          let active = 0, pending = 0, completed = 0;
+          res.requests.forEach(r => {
+            if (['matching', 'notified'].includes(r.status)) pending++;
+            else if (['complete', 'cancelled'].includes(r.status)) completed++;
+            else active++;
+          });
+          setStats({ active, pending, completed });
+        }
+      } catch (err) {
+        console.error('Failed to load requests:', err);
+      }
+    }
+    
+    loadRequests();
+    const interval = setInterval(loadRequests, 5000);
+
     Animated.stagger(80,
       cardAnims.map(({ opacity, translateY }) =>
         Animated.parallel([
@@ -30,6 +49,8 @@ export default function RequesterHome({ navigation }) {
         ])
       )
     ).start();
+
+    return () => clearInterval(interval);
   }, []);
 
   const Stagger = ({ index, children, style }) => (
@@ -60,22 +81,21 @@ export default function RequesterHome({ navigation }) {
           </View>
         </Stagger>
 
-        {/* Stats */}
         <Stagger index={1}>
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Ionicons name="pulse" size={20} color={COLORS.info} />
-              <Text style={styles.statValue}>2</Text>
+              <Text style={styles.statValue}>{stats.active}</Text>
               <Text style={styles.statLabel}>Active</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.success} />
-              <Text style={styles.statValue}>5</Text>
+              <Text style={styles.statValue}>{stats.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="time-outline" size={20} color={COLORS.warning} />
-              <Text style={styles.statValue}>1</Text>
+              <Text style={styles.statValue}>{stats.pending}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
           </View>
@@ -93,30 +113,40 @@ export default function RequesterHome({ navigation }) {
           </TouchableOpacity>
         </Stagger>
 
-        {/* Recent Requests */}
         <Stagger index={3}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Recent Requests</Text>
-            {RECENT_REQUESTS.map((req, i) => (
-              <View key={req.id} style={[styles.requestCard, i < RECENT_REQUESTS.length - 1 && styles.requestCardBorder]}>
-                <View style={styles.requestLeft}>
-                  <View style={styles.bloodPill}>
-                    <Ionicons name="water" size={14} color={COLORS.primary} />
-                    <Text style={styles.bloodPillText}>{req.type}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.requestHospital}>{req.hospital}</Text>
-                    <View style={styles.requestMeta}>
-                      <Ionicons name="calendar-outline" size={12} color={COLORS.textMuted} />
-                      <Text style={styles.requestDate}>{req.date}</Text>
+            {requests.length === 0 ? (
+              <Text style={{ color: COLORS.textMuted, fontSize: 13, paddingVertical: 10 }}>No requests found.</Text>
+            ) : requests.map((req, i) => {
+              const isComplete = req.status === 'complete';
+              const isPending = req.status === 'matching' || req.status === 'notified';
+              const statusLabel = isComplete ? 'Completed' : isPending ? 'Pending Match' : 'Active';
+              const statusColor = isComplete ? COLORS.success : isPending ? COLORS.warning : COLORS.info;
+              const statusBg = isComplete ? COLORS.successLight : isPending ? COLORS.warningLight : '#E1F5FE';
+              const d = new Date(req.created_at);
+
+              return (
+                <View key={req.id} style={[styles.requestCard, i < requests.length - 1 && styles.requestCardBorder]}>
+                  <View style={styles.requestLeft}>
+                    <View style={styles.bloodPill}>
+                      <Ionicons name="water" size={14} color={COLORS.primary} />
+                      <Text style={styles.bloodPillText}>{req.blood_type}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.requestHospital}>{req.hospital_name || 'Hospital'}</Text>
+                      <View style={styles.requestMeta}>
+                        <Ionicons name="calendar-outline" size={12} color={COLORS.textMuted} />
+                        <Text style={styles.requestDate}>{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+                      </View>
                     </View>
                   </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                    <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+                  </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: req.statusBg }]}>
-                  <Text style={[styles.statusBadgeText, { color: req.statusColor }]}>{req.status}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </Stagger>
 

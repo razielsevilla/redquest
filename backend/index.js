@@ -627,6 +627,73 @@ app.post('/checkin/simulate', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /hospitals
+app.get('/hospitals', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM hospitals ORDER BY name ASC');
+    res.json({ hospitals: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch hospitals' });
+  }
+});
+
+// GET /requests/me
+app.get('/requests/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT br.*, h.name as hospital_name 
+       FROM blood_requests br
+       JOIN hospitals h ON h.id = br.hospital_id
+       WHERE br.requester_id = $1 
+       ORDER BY br.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ requests: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch requests' });
+  }
+});
+
+// GET /requests/hospital
+app.get('/requests/hospital', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT br.*, h.name as hospital_name,
+       json_build_object('id', u.id, 'name', u.name, 'phone', u.phone) as requester
+       FROM blood_requests br
+       JOIN hospitals h ON h.id = br.hospital_id
+       JOIN users u ON u.id = br.requester_id
+       ORDER BY CASE WHEN br.status IN ('matching', 'accepted', 'rider_dispatched', 'donor_en_route') THEN 0 ELSE 1 END, br.created_at DESC`
+    );
+    res.json({ requests: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch hospital requests' });
+  }
+});
+
+// GET /quests/history
+app.get('/quests/history', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT q.*, br.hospital_id, br.blood_type as request_blood_type, br.urgency, br.units_needed,
+         h.name AS hospital_name, h.address AS hospital_address
+       FROM quests q
+       JOIN blood_requests br ON br.id = q.request_id
+       JOIN hospitals h ON h.id = br.hospital_id
+       WHERE q.donor_id = $1 AND q.status IN ('completed', 'declined', 'expired')
+       ORDER BY q.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ quests: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch quest history' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

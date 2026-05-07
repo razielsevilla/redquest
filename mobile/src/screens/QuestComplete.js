@@ -6,7 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
-export default function QuestComplete({ navigation }) {
+export default function QuestComplete({ navigation, route }) {
+  const stats = route.params?.stats || {};
   const anims = useRef(
     Array.from({ length: 4 }, () => ({
       opacity: new Animated.Value(0),
@@ -70,22 +71,36 @@ export default function QuestComplete({ navigation }) {
             <CertRow label="Blood Type" value="O+ Positive" />
             <CertRow label="Hemoglobin" value="14.2 g/dL" />
             <CertRow label="Blood Pressure" value="120/80 mmHg" />
-            <CertRow label="Total Donations" value="13" valueRed />
+            <CertRow label="XP Earned" value={`+${stats.xp_gained || 200} XP`} valueRed />
           </View>
         </Fade>
 
         {/* Badge Unlocked */}
-        <Fade i={2}>
-          <View style={styles.badgeBanner}>
-            <View style={styles.badgeIconWrap}>
-              <Ionicons name="trophy" size={22} color={COLORS.white} />
+        {stats.leveled_up ? (
+          <Fade i={2}>
+            <View style={styles.badgeBanner}>
+              <View style={styles.badgeIconWrap}>
+                <Ionicons name="trophy" size={22} color={COLORS.white} />
+              </View>
+              <View style={styles.badgeInfo}>
+                <Text style={styles.badgeTitle}>Level Up!</Text>
+                <Text style={styles.badgeSub}>Congratulations! You are now Level {stats.new_level}.</Text>
+              </View>
             </View>
-            <View style={styles.badgeInfo}>
-              <Text style={styles.badgeTitle}>New Badge Unlocked!</Text>
-              <Text style={styles.badgeSub}>Life Saver · 10+ Donations</Text>
+          </Fade>
+        ) : (
+          <Fade i={2}>
+            <View style={styles.badgeBanner}>
+              <View style={[styles.badgeIconWrap, { backgroundColor: COLORS.success }]}>
+                <Ionicons name="star" size={22} color={COLORS.white} />
+              </View>
+              <View style={styles.badgeInfo}>
+                <Text style={styles.badgeTitle}>Heroic Effort</Text>
+                <Text style={styles.badgeSub}>You're getting closer to your next level!</Text>
+              </View>
             </View>
-          </View>
-        </Fade>
+          </Fade>
+        )}
 
         {/* Buttons */}
         <Fade i={3} style={styles.buttonsSection}>

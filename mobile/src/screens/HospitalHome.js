@@ -5,12 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { getHospitalRequests } from '../lib/api';
 
 // ─── Sample data ────────────────────────────────────────────
-const ACTIVE_DELIVERIES = [
-  { id: '1', name: 'Jitesh Kumar', bloodType: 'O+', units: 2, status: 'In Transit', statusColor: COLORS.info, statusBg: COLORS.infoLight, eta: '12 mins' },
-  { id: '2', name: 'Sarah Johnson', bloodType: 'A+', units: 1, status: 'Collection', statusColor: COLORS.warning, statusBg: COLORS.warningLight, eta: '25 mins' },
-];
 const STOCK_TYPES = [
   { type: 'A+', units: 18 },
   { type: 'B+', units: 17 },
@@ -20,6 +17,9 @@ const STOCK_TYPES = [
 
 export default function HospitalHome({ navigation }) {
   const [hasNotification, setHasNotification] = useState(true);
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ active: 0, pending: 0, today: 0 });
+
   const cardAnims = useRef(
     Array.from({ length: 5 }, () => ({
       opacity: new Animated.Value(0),
@@ -28,6 +28,31 @@ export default function HospitalHome({ navigation }) {
   ).current;
 
   useEffect(() => {
+    async function loadRequests() {
+      try {
+        const res = await getHospitalRequests();
+        if (res?.requests) {
+          // Sort newest first
+          const sorted = res.requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          setRequests(sorted);
+          let active = 0, pending = 0, today = 0;
+          const now = new Date();
+          sorted.forEach(r => {
+            if (['matching', 'notified'].includes(r.status)) pending++;
+            else if (r.status !== 'complete' && r.status !== 'cancelled') active++;
+            
+            const reqDate = new Date(r.created_at);
+            if (reqDate.toDateString() === now.toDateString()) today++;
+          });
+          setStats({ active, pending, today });
+        }
+      } catch (err) {
+        console.error('Failed to load hospital requests:', err);
+      }
+    }
+    loadRequests();
+    const interval = setInterval(loadRequests, 5000);
+
     Animated.stagger(70,
       cardAnims.map(({ opacity, translateY }) =>
         Animated.parallel([
@@ -36,6 +61,8 @@ export default function HospitalHome({ navigation }) {
         ])
       )
     ).start();
+
+    return () => clearInterval(interval);
   }, []);
 
   const Stagger = ({ index, children, style }) => (
@@ -68,17 +95,17 @@ export default function HospitalHome({ navigation }) {
           <View style={styles.statsRow}>
             <View style={styles.statChip}>
               <Ionicons name="pulse" size={18} color={COLORS.info} style={{ marginBottom: 4 }} />
-              <Text style={styles.statChipValue}>5</Text>
+              <Text style={styles.statChipValue}>{stats.active}</Text>
               <Text style={styles.statChipLabel}>Active</Text>
             </View>
             <View style={styles.statChip}>
               <Ionicons name="time-outline" size={18} color={COLORS.warning} style={{ marginBottom: 4 }} />
-              <Text style={styles.statChipValue}>3</Text>
+              <Text style={styles.statChipValue}>{stats.pending}</Text>
               <Text style={styles.statChipLabel}>Pending</Text>
             </View>
             <View style={styles.statChip}>
               <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.success} style={{ marginBottom: 4 }} />
-              <Text style={styles.statChipValue}>28</Text>
+              <Text style={styles.statChipValue}>{stats.today}</Text>
               <Text style={styles.statChipLabel}>Today</Text>
             </View>
           </View>
@@ -96,28 +123,38 @@ export default function HospitalHome({ navigation }) {
           </TouchableOpacity>
         </Stagger>
 
-        {/* Active Deliveries */}
+        {/* Active Requests */}
         <Stagger index={3}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Active Deliveries</Text>
-            {ACTIVE_DELIVERIES.map((d, i) => (
-              <View key={d.id} style={[styles.deliveryCard, i < ACTIVE_DELIVERIES.length - 1 && styles.deliveryCardBorder]}>
-                <View style={styles.deliveryLeft}>
-                  <Text style={styles.deliveryName}>{d.name}</Text>
-                  <View style={styles.deliveryBloodRow}>
-                    <Ionicons name="water" size={12} color={COLORS.primary} />
-                    <Text style={styles.deliveryBloodType}>{d.bloodType}</Text>
-                    <Text style={styles.deliveryUnits}>· {d.units} units</Text>
+            <Text style={styles.sectionTitle}>Request Queue</Text>
+            {requests.length === 0 ? (
+              <Text style={{ color: COLORS.textMuted, fontSize: 13, paddingVertical: 10 }}>No active requests in queue.</Text>
+            ) : requests.slice(0, 5).map((req, i) => {
+              const isComplete = req.status === 'complete';
+              const isPending = req.status === 'matching' || req.status === 'notified';
+              const statusLabel = isComplete ? 'Completed' : isPending ? 'Matching' : 'In Transit';
+              const statusColor = isComplete ? COLORS.success : isPending ? COLORS.warning : COLORS.info;
+              const statusBg = isComplete ? COLORS.successLight : isPending ? COLORS.warningLight : COLORS.infoLight;
+
+              return (
+                <View key={req.id} style={[styles.deliveryCard, i < 4 && i < requests.length - 1 && styles.deliveryCardBorder]}>
+                  <View style={styles.deliveryLeft}>
+                    <Text style={styles.deliveryName}>{req.patient_name || `Patient #${req.id.substring(0, 4)}`}</Text>
+                    <View style={styles.deliveryBloodRow}>
+                      <Ionicons name="water" size={12} color={COLORS.primary} />
+                      <Text style={styles.deliveryBloodType}>{req.blood_type}</Text>
+                      <Text style={styles.deliveryUnits}>· {req.units_needed || 1} units</Text>
+                    </View>
+                  </View>
+                  <View style={styles.deliveryRight}>
+                    <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                      <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+                    </View>
+                    <Text style={styles.deliveryEta}>{req.urgency.toUpperCase()}</Text>
                   </View>
                 </View>
-                <View style={styles.deliveryRight}>
-                  <View style={[styles.statusBadge, { backgroundColor: d.statusBg }]}>
-                    <Text style={[styles.statusBadgeText, { color: d.statusColor }]}>{d.status}</Text>
-                  </View>
-                  <Text style={styles.deliveryEta}>ETA: {d.eta}</Text>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </Stagger>
 

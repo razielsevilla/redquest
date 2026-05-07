@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { checkinSimulate } from '../lib/api';
 
 // ─── Progress stepper ────────────────────────────────────────
 const STEPS = [
@@ -83,7 +84,9 @@ function FakeQR({ size = 180 }) {
 }
 
 // ─── Main Screen ────────────────────────────────────────────
-export default function RiderEnRoute({ navigation }) {
+export default function RiderEnRoute({ navigation, route }) {
+  const quest = route.params?.quest || {};
+  const [isSimulating, setIsSimulating] = React.useState(false);
   const anims = useRef(
     Array.from({ length: 4 }, () => ({
       opacity: new Animated.Value(0),
@@ -109,6 +112,21 @@ export default function RiderEnRoute({ navigation }) {
     }]}>{children}</Animated.View>
   );
 
+  const handleSimulate = async () => {
+    if (!quest.id) {
+      navigation.navigate('QuestComplete');
+      return;
+    }
+    setIsSimulating(true);
+    try {
+      const res = await checkinSimulate(quest.id);
+      navigation.replace('QuestComplete', { stats: res });
+    } catch (err) {
+      console.error('Simulate failed', err);
+      setIsSimulating(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -120,7 +138,7 @@ export default function RiderEnRoute({ navigation }) {
         </View>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Donation in Progress</Text>
-          <Text style={styles.headerSub}>City General Hospital</Text>
+          <Text style={styles.headerSub}>{quest.hospital_name || 'City General Hospital'}</Text>
         </View>
         <View style={{ width: 50 }} />
       </Fade>
@@ -134,10 +152,14 @@ export default function RiderEnRoute({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Your Rider</Text>
             <View style={styles.riderRow}>
-              <View style={styles.riderAvatar}><Text style={styles.riderAvatarText}>RS</Text></View>
+              <View style={styles.riderAvatar}>
+                <Text style={styles.riderAvatarText}>
+                  {quest.rider?.rider_name ? quest.rider.rider_name.charAt(0) : 'RS'}
+                </Text>
+              </View>
               <View style={styles.riderInfo}>
-                <Text style={styles.riderName}>Rahul Singh</Text>
-                <Text style={styles.riderId}>Rider ID: VF-R-2341</Text>
+                <Text style={styles.riderName}>{quest.rider?.rider_name || 'Rahul Singh'}</Text>
+                <Text style={styles.riderId}>Plate: {quest.rider?.plate_number || 'VF-R-2341'}</Text>
               </View>
               <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
                 <Ionicons name="call" size={18} color={COLORS.success} />
@@ -146,7 +168,7 @@ export default function RiderEnRoute({ navigation }) {
             <View style={styles.arrivingRow}>
               <View style={styles.greenDot} />
               <Text style={styles.arrivingLabel}>Arriving in</Text>
-              <Text style={styles.arrivingTime}>12 mins</Text>
+              <Text style={styles.arrivingTime}>{quest.rider?.eta_minutes || 12} mins</Text>
             </View>
           </View>
         </Fade>
@@ -159,10 +181,14 @@ export default function RiderEnRoute({ navigation }) {
           </View>
         </Fade>
 
-        <TouchableOpacity style={styles.primaryBtn}
-          onPress={() => navigation.navigate('QuestComplete')} activeOpacity={0.85}>
-          <Text style={styles.primaryBtnText}>Demo: QR Scanned</Text>
-          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+        <TouchableOpacity 
+          style={[styles.primaryBtn, isSimulating && { opacity: 0.7 }]}
+          onPress={handleSimulate} 
+          activeOpacity={0.85}
+          disabled={isSimulating}
+        >
+          <Text style={styles.primaryBtnText}>{isSimulating ? 'Simulating...' : 'Demo: QR Scanned'}</Text>
+          {!isSimulating && <Ionicons name="arrow-forward" size={18} color={COLORS.white} />}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
