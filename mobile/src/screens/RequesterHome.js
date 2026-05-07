@@ -68,8 +68,8 @@ export default function RequesterHome({ navigation }) {
         <Stagger index={0}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Family Portal</Text>
-              <Text style={styles.subGreeting}>Manage blood requests</Text>
+              <Text style={styles.greeting}>Requester Portal</Text>
+              <Text style={styles.subGreeting}>Manage your blood requests</Text>
             </View>
             <TouchableOpacity
               style={styles.bellBtn}

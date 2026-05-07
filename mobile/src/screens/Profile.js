@@ -50,12 +50,12 @@ export default function Profile({ navigation }) {
           <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
           <View style={styles.rolePill}>
             <Ionicons
-              name={user?.role === 'hospital_staff' ? 'medkit' : user?.role === 'requester' ? 'people' : 'water'}
+              name={user?.role === 'requester' ? 'people' : 'water'}
               size={12}
               color={COLORS.primary}
             />
             <Text style={styles.rolePillText}>
-              {user?.role ? user.role.replace('_', ' ').toUpperCase() : 'DONOR'}
+              {user?.role === 'requester' ? 'REQUESTER' : 'DONOR'}
             </Text>
           </View>
         </View>
@@ -84,7 +84,7 @@ export default function Profile({ navigation }) {
               </View>
             </View>
 
-            {user?.role === 'donor' && (
+            {(user?.role === 'donor' || user?.role === 'requester') && (
               <View style={[styles.infoRow, styles.infoRowBorder]}>
                 <View style={styles.infoIconWrap}>
                   <Ionicons name="water-outline" size={16} color={COLORS.primary} />

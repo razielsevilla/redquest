@@ -1,249 +1,124 @@
 # RedQuest — System Architecture
 
-**Version:** 1.0 (Hackathon MVP)
+## Overview
 
----
-
-## 1. Architecture Overview
-
-RedQuest follows a **mobile-first client-server architecture** with a REST API backend, a PostgreSQL + PostGIS database for geo-matching, Firebase for push notifications, and a real-time layer via WebSockets for status updates.
+RedQuest is a two-role blood donation matching platform. The architecture is a straightforward mobile-backend-database stack, intentionally kept simple and professional.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        CLIENT LAYER                         │
-│                                                             │
-│   Donor App           Requester App         Rider App       │
-│   (React Native)      (React Native)        (React Native)  │
-└──────────┬────────────────┬──────────────────┬─────────────┘
-           │                │                  │
-           │         HTTPS + WebSocket         │
-           │                │                  │
-┌──────────▼────────────────▼──────────────────▼─────────────┐
-│                      API GATEWAY                            │
-│              Node.js + Express (REST API)                   │
-│         Auth middleware (JWT) · Rate limiting               │
-└──────────┬──────────────────────────────────────────────────┘
-           │
-     ┌─────┴──────────────────────────────┐
-     │                                    │
-┌────▼──────────────┐          ┌──────────▼────────────┐
-│  Business Logic   │          │   Real-time Layer      │
-│  - Geo-matching   │          │   Socket.io server     │
-│  - Quest lifecycle│          │   Quest status events  │
-│  - XP + badges    │          │   Rider location push  │
-│  - Notifications  │          └───────────────────────┘
-└────┬──────────────┘
-     │
-┌────▼──────────────┐    ┌─────────────────────────┐
-│  PostgreSQL        │    │  Firebase Cloud          │
-│  + PostGIS        │    │  Messaging (FCM)         │
-│  - Donor index    │    │  - Quest push alerts     │
-│  - Geo queries    │    │  - Status notifications  │
-└───────────────────┘    └─────────────────────────┘
+┌─────────────────────────────────────────┐
+│           React Native (Expo)           │
+│  ┌──────────────┐  ┌──────────────────┐ │
+│  │  Donor UI    │  │  Requester UI    │ │
+│  │  - Home      │  │  - Home          │ │
+│  │  - Quests    │  │  - Post Request  │ │
+│  │  - Badges    │  │  - History       │ │
+│  │  - Profile   │  │  - Profile       │ │
+│  └──────────────┘  └──────────────────┘ │
+└──────────────────┬──────────────────────┘
+                   │ HTTPS / REST
+┌──────────────────▼──────────────────────┐
+│         Node.js + Express (Railway)     │
+│                                         │
+│  Auth │ Requests │ Quests │ Checkin     │
+└──────────────────┬──────────────────────┘
+                   │ pg pool
+┌──────────────────▼──────────────────────┐
+│       PostgreSQL + PostGIS (Railway)    │
+│                                         │
+│  hospitals │ users │ blood_requests     │
+│  quests    │ notifications              │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Component Breakdown
+## Roles
 
-### 2.1 Mobile Apps (React Native + Expo)
+### Donor
+- Registers with blood type and GPS location
+- Receives push notifications when a compatible request is posted nearby (within 10 km)
+- Accepts or declines quests within a 5-minute window
+- Earns XP and levels up for each completed donation
 
-Three distinct app experiences sharing a common codebase with role-based routing:
-
-**Donor App**
-- Registration / profile management
-- Incoming quest notification handling
-- Quest accept / decline flow
-- Rider tracking screen
-- QR code display for hospital check-in
-- Donation history, XP, badges, leaderboard
-
-**Requester App**
-- Post blood request form
-- Real-time request status tracking
-- Rider and donor ETA display
-- Payment screen (Phase 1)
-
-**Rider App (MVP: minimal)**
-- Accept dispatch
-- Navigate to donor pickup
-- Confirm donor pickup and drop-off
-- (For hackathon: can be simulated by a tester running the rider screen manually)
-
-### 2.2 Backend API (Node.js + Express)
-
-Stateless REST API. All state is in PostgreSQL. WebSocket server runs alongside for real-time updates.
-
-Key modules:
-- `auth/` — Registration, login, JWT issuance
-- `users/` — Profile, blood type, location update
-- `requests/` — Create, fetch, cancel blood requests
-- `quests/` — Match, assign, accept, decline, complete
-- `riders/` — Dispatch, ETA, status
-- `gamification/` — XP calculation, badge award, leaderboard
-- `notifications/` — FCM push trigger wrappers
-
-### 2.3 Database (PostgreSQL + PostGIS)
-
-PostgreSQL is the primary data store. The **PostGIS** extension enables efficient geospatial queries for donor matching.
-
-Key geospatial operations:
-- `ST_DWithin` — find donors within radius of a request
-- `ST_Distance` — compute exact distance for ranking
-- `ST_SetSRID(ST_MakePoint(lng, lat), 4326)` — store and query coordinates
-
-All donor locations are indexed with a `GIST` spatial index for fast range queries.
-
-### 2.4 Push Notifications (Firebase FCM)
-
-- Backend uses Firebase Admin SDK to send targeted push notifications to specific device tokens
-- Notification payloads include: quest ID, blood type, urgency, distance, hospital name
-- Quest alert notifications are high-priority FCM messages to bypass Doze mode on Android
-
-### 2.5 Real-time Updates (Socket.io)
-
-WebSocket connections maintain real-time state for:
-- Requester watching quest status (Searching → Matched → Dispatched → Complete)
-- Rider location updates to requester screen (Phase 1)
-- Quest expiry countdown synchronization
-
-For hackathon MVP, polling (every 5 seconds) is an acceptable fallback if WebSockets are unstable.
+### Requester
+- Posts blood requests, selecting a hospital and blood type needed
+- Tracks request status in real-time
+- No blood type required for matching (the request specifies the type needed)
 
 ---
 
-## 3. Geo-Matching Algorithm
+## Matching Algorithm
 
-### Step 1 — Blood Type Filter
-```sql
-SELECT donor_id FROM donors
-WHERE blood_type = ANY(compatible_types(:requested_type))
-  AND cooldown_until < NOW()
-  AND is_available = true
+1. Requester posts a request with `hospital_id` + `blood_type`
+2. Backend uses PostGIS `ST_DWithin` to find donors within **10 km** of the hospital
+3. Filters by: `role = 'donor'`, `is_available = true`, `blood_type` compatible
+4. Creates a quest record per eligible donor (up to 5)
+5. Notifies the **closest** donor via Expo push notification
+6. Sets a **5-minute expiry timer** on that quest
+7. If the donor declines or the timer expires, the next closest donor is notified
+
+```
+Hospital GPS ──► ST_DWithin(10km) ──► Compatible donors
+                                             │
+                          Sort by distance_meters ASC
+                                             │
+                          Notify donor[0] ──► 5-min timer
+                                             │
+                    Decline/Expire ──► Notify donor[1] ...
 ```
 
-### Step 2 — Radius Search (PostGIS)
-```sql
-SELECT donor_id,
-       ST_Distance(
-         location::geography,
-         ST_SetSRID(ST_MakePoint(:req_lng, :req_lat), 4326)::geography
-       ) AS distance_meters
-FROM donors
-WHERE ST_DWithin(
-  location::geography,
-  ST_SetSRID(ST_MakePoint(:req_lng, :req_lat), 4326)::geography,
-  :radius_meters
-)
-ORDER BY distance_meters ASC
-LIMIT 10;
+---
+
+## Data Flow: Post a Request
+
+```
+POST /requests
+  → createRequestWithQuests()
+    → findCompatibleDonors(hospitalId, bloodType)
+      → PostGIS query: donors within 10km, matching blood type
+    → INSERT INTO quests (one per donor)
+    → activateNextQuest(requestId)
+      → UPDATE quests SET notified_at = NOW() (closest)
+      → UPDATE blood_requests SET status = 'notified'
+      → sendQuestPushNotification(donor.device_token)
+      → setTimeout(handleQuestExpiry, 5min)
 ```
 
-### Step 3 — Expanding Ring
-If no donors are found within the initial radius, the system retries with a larger radius:
+---
 
-| Attempt | Radius | Delay |
+## Data Flow: Accept a Quest
+
+```
+POST /quests/:id/accept
+  → acceptQuest(questId, donorId)
+    → Validate quest.donor_id === req.user.id
+    → Validate quest.status === 'pending'
+    → clearQuestTimer(questId)
+    → UPDATE quests SET status = 'accepted'
+    → UPDATE blood_requests SET status = 'accepted'
+    → Return { questId }
+```
+
+---
+
+## Data Flow: Complete a Quest
+
+```
+POST /checkin/simulate
+  → UPDATE quests SET status = 'completed'
+  → UPDATE blood_requests SET status = 'complete'
+  → Calculate XP (200 base + urgency bonus)
+  → UPDATE users SET xp, level, donation_count
+  → Return { xp_gained, new_xp, leveled_up, new_level }
+```
+
+---
+
+## Infrastructure
+
+| Service | Platform | Notes |
 |---|---|---|
-| 1 | 5 km | Immediate |
-| 2 | 10 km | After 3 min (no accepts) |
-| 3 | 20 km | After 6 min |
-| 4 | City-wide | After 10 min — escalate to hospital |
-
-### Step 4 — Batch Notification
-For standard urgency: ping donors one at a time (top 3 by distance, sequentially).  
-For urgent/critical: ping top 5 simultaneously.
-
----
-
-## 4. Quest State Machine
-
-```
-POSTED
-  │
-  ▼
-MATCHING ──(no donors found in all rings)──► ESCALATED
-  │
-  ▼
-NOTIFIED ──(5 min timeout, no accept)──► MATCHING (retry next donor)
-  │
-  ▼
-ACCEPTED
-  │
-  ▼
-RIDER_DISPATCHED
-  │
-  ▼
-DONOR_EN_ROUTE
-  │
-  ▼
-DONOR_ARRIVED (QR check-in)
-  │
-  ▼
-COMPLETE
-  │
-  (or at any point before COMPLETE)
-  ▼
-CANCELLED
-```
-
----
-
-## 5. Tech Stack Summary
-
-| Layer | Technology | Reason |
-|---|---|---|
-| Mobile | React Native + Expo | Cross-platform, fast iteration, Expo push works well |
-| Navigation | React Navigation v6 | Standard, well-documented |
-| API client | Axios | Interceptors for JWT refresh |
-| Backend | Node.js + Express | Team familiarity, fast setup |
-| Database | PostgreSQL 15 + PostGIS | Geo-queries, relational, free |
-| Real-time | Socket.io | Easy WebSocket management |
-| Push | Firebase FCM | Free, reliable, works on both platforms |
-| Auth | JWT (access + refresh tokens) | Stateless, scalable |
-| Storage | AWS S3 / Cloudflare R2 | Profile photos (Phase 1) |
-| Hosting | Railway (backend) + Expo Go (mobile demo) | Free tier, instant deploy |
-| Payments | GCash / Maya API | Philippines-native payment (Phase 1) |
-| CI/CD | GitHub Actions | Auto-deploy on push to main |
-
----
-
-## 6. Security Considerations
-
-| Concern | Approach |
-|---|---|
-| Donor location privacy | Store approximate location (barangay-level), not exact coordinates, on profile. Exact location shared only during active quest acceptance. |
-| Donor identity to requester | Requester only sees blood type confirmed and ETA — no personal data until both parties consent (Phase 1) |
-| JWT security | Short-lived access tokens (15 min) + refresh tokens (7 days), stored in SecureStore |
-| API rate limiting | 60 requests/minute per IP via express-rate-limit |
-| Data encryption | TLS in transit, AES-256 at rest for sensitive fields |
-| Blood type self-declaration | Flagged as unverified until hospital confirms at first donation |
-
----
-
-## 7. Infrastructure (Hackathon Scale)
-
-```
-Expo Go (dev build on device)
-       │
-       └──► Railway (Node.js API, free tier)
-                 │
-                 └──► Railway PostgreSQL (free tier, 500 MB)
-                 │
-                 └──► Firebase (FCM push, free Spark plan)
-```
-
-For production scale (Phase 1+), migrate to:
-- AWS EC2 + RDS PostgreSQL (Multi-AZ)
-- ElastiCache Redis for geo-index caching
-- CloudFront CDN
-- Auto-scaling groups for API servers
-
-## Deferred for 7-Day Hackathon
-
-To stay focused on a shippable demo, the following architecture features are deferred for the short hackathon timeline:
-
-- Full WebSocket-based real-time layer (use 5s polling for status updates in the demo)
-- Live rider GPS tracking map (show static/mock ETA data instead)
-- Expanding-ring retry workflow (use a fixed 10 km radius for matching in the demo)
-- Robust offline sync / background location handling
-- Production-grade CDN, autoscaling and Redis caching (not required for demo scale)
-
+| API | Railway | Node.js, auto-deploys from main branch |
+| Database | Railway | PostgreSQL + PostGIS extension |
+| Mobile | Expo | EAS Build for Android/iOS |
+| Push | Expo Push | expo-notifications |

@@ -173,12 +173,6 @@ export default function PostRequest({ navigation }) {
           />
         </View>
 
-        {/* Transport Fee */}
-        <View style={styles.feePill}>
-          <Ionicons name="bicycle-outline" size={18} color={COLORS.primary} />
-          <Text style={styles.feeText}>Transport fee: <Text style={styles.feeBold}>₱150</Text></Text>
-          <Text style={styles.feeSub}>Rider cost, paid by you</Text>
-        </View>
 
         {/* Submit */}
         <TouchableOpacity

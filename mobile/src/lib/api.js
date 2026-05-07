@@ -68,9 +68,6 @@ export async function getMyRequests() {
   return requestJson('/requests/me', { method: 'GET' });
 }
 
-export async function getHospitalRequests() {
-  return requestJson('/requests/hospital', { method: 'GET' });
-}
 
 // ── QUESTS ──
 export async function getActiveQuest() {

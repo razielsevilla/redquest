@@ -93,9 +93,7 @@ export default function Login({ navigation, route }) {
       await storage.setItem(AUTH_EMAIL_KEY, email.trim().toLowerCase());
       await storage.setItem(AUTH_ROLE_KEY, user.role || '');
       await storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-      const dest =
-        user.role === 'donor' ? 'Donor' :
-          user.role === 'hospital_staff' ? 'Hospital' : 'Requester';
+      const dest = user.role === 'donor' ? 'Donor' : 'Requester';
       navigation?.navigate(dest);
     } catch (err) {
       setStatusMessage(err.message || 'Could not sign in. Try again.');

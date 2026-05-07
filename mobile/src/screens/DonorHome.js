@@ -273,20 +273,38 @@ export default function DonorHome({ navigation }) {
           </TouchableOpacity>
         </Stagger>
 
-        {/* ── LIVE QUEST CTA ── */}
         {activeQuest && (
           <Stagger index={7}>
             <TouchableOpacity
-              style={[styles.demoBtn, { borderColor: COLORS.primary, backgroundColor: COLORS.primarySurface, borderRadius: RADIUS.md, borderWidth: 1, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }]}
+              style={[{
+                borderColor: COLORS.primary,
+                backgroundColor: COLORS.primarySurface,
+                borderRadius: RADIUS.md,
+                borderWidth: 1,
+                padding: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 12,
+              }]}
               onPress={() => {
-                if (activeQuest.status === 'pending') navigation.navigate('QuestAlert', { quest: activeQuest });
-                else navigation.navigate('RiderEnRoute', { quest: activeQuest });
+                if (activeQuest.status === 'pending') {
+                  navigation.navigate('QuestAlert', { quest: activeQuest });
+                } else {
+                  navigation.navigate('QuestAccepted', { quest: activeQuest });
+                }
               }}
               activeOpacity={0.85}
             >
-              <Ionicons name="flash-outline" size={18} color={COLORS.primary} />
+              <Ionicons
+                name={activeQuest.status === 'pending' ? 'flash-outline' : 'navigate-outline'}
+                size={18}
+                color={COLORS.primary}
+              />
               <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 14 }}>
-                {activeQuest.status === 'pending' ? '🔥 New Quest Available! Tap to view.' : '🚗 Quest in progress. Tap to track.'}
+                {activeQuest.status === 'pending'
+                  ? 'New Quest Available — Tap to view'
+                  : 'Quest in progress — Tap to track'}
               </Text>
             </TouchableOpacity>
           </Stagger>

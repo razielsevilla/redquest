@@ -3,34 +3,14 @@ const { pool } = require('./db');
 const runMigrations = async () => {
   try {
     console.log('Running migrations...');
-    
+
     // Enable PostGIS & UUID
     await pool.query(`CREATE EXTENSION IF NOT EXISTS postgis;`);
     await pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
-    // Create users table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name            VARCHAR(100) NOT NULL,
-        email           VARCHAR(255) UNIQUE NOT NULL,
-        phone           VARCHAR(20) NOT NULL,
-        password_hash   TEXT NOT NULL,
-        role            VARCHAR(20) NOT NULL CHECK (role IN ('donor', 'requester', 'hospital_staff', 'rider')),
-        blood_type      VARCHAR(5) CHECK (blood_type IN ('A+','A-','B+','B-','O+','O-','AB+','AB-')),
-        location        GEOGRAPHY(POINT, 4326),
-        is_available    BOOLEAN DEFAULT true,
-        cooldown_until  TIMESTAMPTZ,
-        device_token    TEXT,
-        xp              INTEGER DEFAULT 0,
-        level           INTEGER DEFAULT 1,
-        donation_count  INTEGER DEFAULT 0,
-        created_at      TIMESTAMPTZ DEFAULT NOW(),
-        updated_at      TIMESTAMPTZ DEFAULT NOW()
-      );
-    `);
-
-    // Create hospitals table
+    // ── Hospitals ──────────────────────────────────────────────────────────────
+    // Hospitals are location reference entities — not a user role.
+    // Requesters pick a hospital as the blood delivery destination.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS hospitals (
         id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -44,7 +24,32 @@ const runMigrations = async () => {
       );
     `);
 
-    // Create blood_requests table
+    // ── Users ──────────────────────────────────────────────────────────────────
+    // Two roles only: donor | requester
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name            VARCHAR(100) NOT NULL,
+        email           VARCHAR(255) UNIQUE NOT NULL,
+        phone           VARCHAR(20) NOT NULL,
+        password_hash   TEXT NOT NULL,
+        role            VARCHAR(20) NOT NULL CHECK (role IN ('donor', 'requester')),
+        blood_type      VARCHAR(5) CHECK (blood_type IN ('A+','A-','B+','B-','O+','O-','AB+','AB-')),
+        location        GEOGRAPHY(POINT, 4326),
+        is_available    BOOLEAN DEFAULT true,
+        cooldown_until  TIMESTAMPTZ,
+        device_token    TEXT,
+        xp              INTEGER DEFAULT 0,
+        level           INTEGER DEFAULT 1,
+        donation_count  INTEGER DEFAULT 0,
+        created_at      TIMESTAMPTZ DEFAULT NOW(),
+        updated_at      TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // ── Blood Requests ─────────────────────────────────────────────────────────
+    // A Requester posts a request specifying which hospital needs blood.
+    // The hospital's GPS location is used as the donor search origin.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS blood_requests (
         id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -54,9 +59,9 @@ const runMigrations = async () => {
         units_needed    INTEGER NOT NULL DEFAULT 1 CHECK (units_needed BETWEEN 1 AND 10),
         urgency         VARCHAR(20) NOT NULL DEFAULT 'standard' CHECK (urgency IN ('standard','urgent','critical')),
         status          VARCHAR(30) NOT NULL DEFAULT 'matching'
-                        CHECK (status IN ('matching','notified','accepted','rider_dispatched','donor_en_route','donor_arrived','complete','cancelled','escalated')),
+                        CHECK (status IN ('matching','notified','accepted','complete','cancelled')),
         notes           TEXT,
-        search_radius_m INTEGER DEFAULT 5000,
+        search_radius_m INTEGER DEFAULT 10000,
         created_at      TIMESTAMPTZ DEFAULT NOW(),
         updated_at      TIMESTAMPTZ DEFAULT NOW(),
         completed_at    TIMESTAMPTZ,
@@ -64,14 +69,15 @@ const runMigrations = async () => {
       );
     `);
 
-    // Create quests table
+    // ── Quests ─────────────────────────────────────────────────────────────────
+    // A quest is a donation task assigned to a specific donor for a specific request.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS quests (
         id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         request_id      UUID NOT NULL REFERENCES blood_requests(id) ON DELETE CASCADE,
         donor_id        UUID NOT NULL REFERENCES users(id),
         status          VARCHAR(20) NOT NULL DEFAULT 'pending'
-                        CHECK (status IN ('pending','accepted','declined','expired','complete','cancelled')),
+                        CHECK (status IN ('pending','accepted','declined','expired','completed','cancelled')),
         notified_at     TIMESTAMPTZ DEFAULT NOW(),
         responded_at    TIMESTAMPTZ,
         expires_at      TIMESTAMPTZ DEFAULT NOW() + INTERVAL '5 minutes',
@@ -81,24 +87,7 @@ const runMigrations = async () => {
       );
     `);
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS riders (
-        id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        quest_id        UUID NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
-        rider_user_id   UUID REFERENCES users(id),
-        partner         VARCHAR(50) DEFAULT 'mock',
-        partner_job_id  TEXT,
-        status          VARCHAR(20) DEFAULT 'dispatched'
-                        CHECK (status IN ('dispatched','en_route_donor','arrived_donor','en_route_hospital','arrived_hospital','complete')),
-        rider_name      VARCHAR(100),
-        plate_number    VARCHAR(20),
-        eta_minutes     INTEGER,
-        dispatched_at   TIMESTAMPTZ DEFAULT NOW(),
-        donor_picked_up_at    TIMESTAMPTZ,
-        donor_dropped_off_at  TIMESTAMPTZ
-      );
-    `);
-
+    // ── Notifications ──────────────────────────────────────────────────────────
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

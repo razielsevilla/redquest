@@ -58,7 +58,7 @@ export default function QuestAccepted({ navigation, route }) {
             <Ionicons name="checkmark" size={36} color={COLORS.white} />
           </Animated.View>
           <Text style={styles.heroTitle}>Quest Accepted!</Text>
-          <Text style={styles.heroSubtitle}>A rider has been dispatched to you.</Text>
+          <Text style={styles.heroSubtitle}>Proceed to the hospital when you are ready.</Text>
         </Fade>
 
         {/* Status card */}
@@ -66,31 +66,12 @@ export default function QuestAccepted({ navigation, route }) {
           <View style={[styles.card, styles.statusCard]}>
             <View style={styles.statusDot} />
             <View style={styles.statusTextWrap}>
-              <Text style={styles.statusTitle}>Rider En Route</Text>
-              <Text style={styles.statusSub}>Your rider is on the way — please be ready outside.</Text>
+              <Text style={styles.statusTitle}>Quest Active</Text>
+              <Text style={styles.statusSub}>Make your way to the hospital at your earliest convenience.</Text>
             </View>
           </View>
         </Fade>
 
-        {/* Rider card */}
-        <Fade i={2}>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Your Rider</Text>
-            <View style={styles.riderRow}>
-              <View style={styles.riderAvatar}>
-                <Ionicons name="bicycle" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.riderInfo}>
-                <Text style={styles.riderName}>{quest.rider?.rider_name || 'Ramon Santos'}</Text>
-                <Text style={styles.riderPlate}>Plate: {quest.rider?.plate_number || 'ABC 1234'}</Text>
-              </View>
-              <View style={styles.etaBadge}>
-                <Text style={styles.etaLabel}>ETA</Text>
-                <Text style={styles.etaValue}>{quest.rider?.eta_minutes || 4} min</Text>
-              </View>
-            </View>
-          </View>
-        </Fade>
 
         {/* Destination card */}
         <Fade i={3}>
@@ -133,21 +114,16 @@ export default function QuestAccepted({ navigation, route }) {
                 <Text style={[styles.questDetailVal, { color: COLORS.primary }]}>{quest.urgency === 'critical' ? 'CRITICAL' : quest.urgency === 'urgent' ? 'HIGH' : 'NORMAL'}</Text>
               </View>
             </View>
-            <View style={styles.infoNote}>
-              <Ionicons name="car-outline" size={16} color={COLORS.textSecondary} />
-              <Text style={styles.infoNoteText}>Transport is covered. A rider will pick you up.</Text>
-            </View>
           </View>
         </Fade>
 
-        {/* Continue button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.primaryBtn}
-          onPress={() => navigation.navigate('RiderEnRoute', { quest })} 
+          onPress={() => navigation.navigate('Donor')}
           activeOpacity={0.85}
         >
-          <Text style={styles.primaryBtnText}>Track Rider</Text>
-          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+          <Text style={styles.primaryBtnText}>I am On My Way</Text>
+          <Ionicons name="navigate-outline" size={18} color={COLORS.white} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelBtn}

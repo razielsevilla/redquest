@@ -18,9 +18,8 @@ import { registerUser } from '../lib/api';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 const ROLES = [
-  { key: 'donor',          label: 'Donor',    icon: 'water' },
-  { key: 'requester',      label: 'Family',   icon: 'people' },
-  { key: 'hospital_staff', label: 'Hospital', icon: 'medkit' },
+  { key: 'donor',     label: 'Donor',     icon: 'water' },
+  { key: 'requester', label: 'Requester', icon: 'people' },
 ];
 
 const BASE_TYPES = ['A', 'B', 'O', 'AB'];
@@ -66,7 +65,7 @@ export default function Register({ navigation }) {
     return () => { kShow.remove(); kHide.remove(); };
   }, []);
 
-  const totalSteps = role === 'hospital_staff' ? 3 : 4;
+  const totalSteps = 4;
 
   const nextStep = () => {
     setStatusMessage('');
@@ -83,11 +82,7 @@ export default function Register({ navigation }) {
         setStatusMessage('Please provide a contact number.');
         return;
       }
-      if (role === 'hospital_staff') {
-        submitRegistration();
-      } else {
-        setStep(4);
-      }
+      setStep(4);
     } else if (step === 4) {
       submitRegistration();
     }
@@ -112,9 +107,9 @@ export default function Register({ navigation }) {
         phone: phone.trim(),
         password,
         role,
-        blood_type: role === 'hospital_staff' ? null : `${baseType}${rhFactor}`,
-        lat: 14.5995, // Default Manila latitude
-        lng: 120.9842, // Default Manila longitude
+        blood_type: `${baseType}${rhFactor}`,
+        lat: 14.5995,
+        lng: 120.9842,
       });
       navigation.navigate('Login', {
         email: email.trim().toLowerCase(),
