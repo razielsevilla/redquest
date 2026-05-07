@@ -7,7 +7,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
-export default function QuestAccepted({ navigation }) {
+export default function QuestAccepted({ navigation, route }) {
+  const quest = route.params?.quest || {};
   const anims = useRef(
     Array.from({ length: 5 }, () => ({
       opacity: new Animated.Value(0),
@@ -80,12 +81,12 @@ export default function QuestAccepted({ navigation }) {
                 <Ionicons name="bicycle" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.riderInfo}>
-                <Text style={styles.riderName}>Ramon Santos</Text>
-                <Text style={styles.riderPlate}>Plate: ABC 1234</Text>
+                <Text style={styles.riderName}>{quest.rider?.rider_name || 'Ramon Santos'}</Text>
+                <Text style={styles.riderPlate}>Plate: {quest.rider?.plate_number || 'ABC 1234'}</Text>
               </View>
               <View style={styles.etaBadge}>
                 <Text style={styles.etaLabel}>ETA</Text>
-                <Text style={styles.etaValue}>4 min</Text>
+                <Text style={styles.etaValue}>{quest.rider?.eta_minutes || 4} min</Text>
               </View>
             </View>
           </View>
@@ -100,11 +101,11 @@ export default function QuestAccepted({ navigation }) {
                 <Ionicons name="medkit" size={22} color={COLORS.primary} />
               </View>
               <View style={styles.destInfo}>
-                <Text style={styles.destName}>St. Luke's Medical Center</Text>
-                <Text style={styles.destDetail}>BGC Blood Bank, Floor 2</Text>
+                <Text style={styles.destName}>{quest.hospital_name || "St. Luke's Medical Center"}</Text>
+                <Text style={styles.destDetail}>{quest.hospital_address || "BGC Blood Bank"}</Text>
                 <View style={styles.distRow}>
                   <Ionicons name="location-outline" size={14} color={COLORS.primary} />
-                  <Text style={styles.distText}>1.3 km from you</Text>
+                  <Text style={styles.distText}>{quest.distance_meters ? `${(quest.distance_meters / 1000).toFixed(1)} km from you` : '1.3 km from you'}</Text>
                 </View>
               </View>
             </View>
@@ -119,17 +120,17 @@ export default function QuestAccepted({ navigation }) {
               <View style={styles.questDetailChip}>
                 <Ionicons name="water" size={16} color={COLORS.primary} />
                 <Text style={styles.questDetailKey}>Blood Type</Text>
-                <Text style={styles.questDetailVal}>O+</Text>
+                <Text style={styles.questDetailVal}>{quest.request_blood_type || 'O+'}</Text>
               </View>
               <View style={styles.questDetailChip}>
                 <Ionicons name="cube-outline" size={16} color={COLORS.textSecondary} />
                 <Text style={styles.questDetailKey}>Units</Text>
-                <Text style={styles.questDetailVal}>2</Text>
+                <Text style={styles.questDetailVal}>{quest.units_needed || 2}</Text>
               </View>
               <View style={styles.questDetailChip}>
                 <Ionicons name="alert-circle-outline" size={16} color={COLORS.primary} />
                 <Text style={styles.questDetailKey}>Priority</Text>
-                <Text style={[styles.questDetailVal, { color: COLORS.primary }]}>High</Text>
+                <Text style={[styles.questDetailVal, { color: COLORS.primary }]}>{quest.urgency === 'critical' ? 'CRITICAL' : quest.urgency === 'urgent' ? 'HIGH' : 'NORMAL'}</Text>
               </View>
             </View>
             <View style={styles.infoNote}>
@@ -139,10 +140,13 @@ export default function QuestAccepted({ navigation }) {
           </View>
         </Fade>
 
-        {/* Demo button */}
-        <TouchableOpacity style={styles.primaryBtn}
-          onPress={() => navigation.navigate('RiderEnRoute')} activeOpacity={0.85}>
-          <Text style={styles.primaryBtnText}>Continue</Text>
+        {/* Continue button */}
+        <TouchableOpacity 
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate('RiderEnRoute', { quest })} 
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryBtnText}>Track Rider</Text>
           <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
         </TouchableOpacity>
 

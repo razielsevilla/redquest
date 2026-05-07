@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Rect, Circle, Path, Polyline } from 'react-native-svg';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { checkinSimulate } from '../lib/api';
 
 // ─── Progress stepper ────────────────────────────────────────
 const STEPS_DATA = [
@@ -147,8 +148,10 @@ function MapView({ isReached }) {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // ─── Main Screen ────────────────────────────────────────────
-export default function RiderEnRoute({ navigation }) {
+export default function RiderEnRoute({ navigation, route }) {
+  const quest = route.params?.quest || {};
   const [status, setStatus] = useState('tracking'); // 'tracking', 'reached'
+  const [isSimulating, setIsSimulating] = useState(false);
   const fadeBtn = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -159,6 +162,21 @@ export default function RiderEnRoute({ navigation }) {
     }, 8000);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleConfirmDelivery = async () => {
+    if (!quest.id) {
+      navigation.navigate('QuestComplete');
+      return;
+    }
+    setIsSimulating(true);
+    try {
+      const res = await checkinSimulate(quest.id);
+      navigation.replace('QuestComplete', { stats: res });
+    } catch (err) {
+      console.error('Simulate failed', err);
+      setIsSimulating(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -172,8 +190,8 @@ export default function RiderEnRoute({ navigation }) {
           </Text>
         </View>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Quest Tracking</Text>
-          <Text style={styles.headerSub}>Rider is collecting blood</Text>
+          <Text style={styles.headerTitle}>Donation in Progress</Text>
+          <Text style={styles.headerSub}>{quest.hospital_name || 'City General Hospital'}</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={COLORS.textMuted} />
@@ -192,10 +210,14 @@ export default function RiderEnRoute({ navigation }) {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Your Rider</Text>
           <View style={styles.riderRow}>
-            <View style={styles.riderAvatar}><Text style={styles.riderAvatarText}>RS</Text></View>
+            <View style={styles.riderAvatar}>
+              <Text style={styles.riderAvatarText}>
+                {quest.rider?.rider_name ? quest.rider.rider_name.charAt(0) : 'RS'}
+              </Text>
+            </View>
             <View style={styles.riderInfo}>
-              <Text style={styles.riderName}>Rahul Singh</Text>
-              <Text style={styles.riderId}>Vehicle: ABC 1234 • Honda Click</Text>
+              <Text style={styles.riderName}>{quest.rider?.rider_name || 'Rahul Singh'}</Text>
+              <Text style={styles.riderId}>Plate: {quest.rider?.plate_number || 'ABC 1234'}</Text>
             </View>
             <TouchableOpacity style={styles.callBtn} activeOpacity={0.8}>
               <Ionicons name="call" size={18} color={COLORS.success} />
@@ -207,7 +229,7 @@ export default function RiderEnRoute({ navigation }) {
               {status === 'reached' ? 'Rider reached destination' : 'Estimated arrival'}
             </Text>
             <Text style={[styles.arrivingTime, status === 'reached' && { color: COLORS.success }]}>
-              {status === 'reached' ? 'Now' : '8 mins'}
+              {status === 'reached' ? 'Now' : (quest.rider?.eta_minutes ? `${quest.rider.eta_minutes} mins` : '8 mins')}
             </Text>
           </View>
         </View>
@@ -215,12 +237,13 @@ export default function RiderEnRoute({ navigation }) {
         {status === 'reached' ? (
           <Animated.View style={{ opacity: fadeBtn }}>
             <TouchableOpacity 
-              style={styles.primaryBtn}
-              onPress={() => navigation.navigate('QuestComplete')} 
+              style={[styles.primaryBtn, isSimulating && { opacity: 0.7 }]}
+              onPress={handleConfirmDelivery} 
               activeOpacity={0.85}
+              disabled={isSimulating}
             >
-              <Text style={styles.primaryBtnText}>Confirm Delivery</Text>
-              <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+              <Text style={styles.primaryBtnText}>{isSimulating ? 'Confirming...' : 'Confirm Delivery'}</Text>
+              {!isSimulating && <Ionicons name="arrow-forward" size={18} color={COLORS.white} />}
             </TouchableOpacity>
           </Animated.View>
         ) : (

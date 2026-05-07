@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { acceptQuest, declineQuest } from '../lib/api';
 
 // ─────────────────────────────────────────────────────────────
 // Mock map placeholder with pins
@@ -50,18 +51,21 @@ function MapPlaceholder() {
 // ─────────────────────────────────────────────────────────────
 // Request card
 // ─────────────────────────────────────────────────────────────
-function RequestCard({ name, distance, bloodType, units, time, priority, onAccept, delay }) {
+function RequestCard({ quest, onAccept, onDecline, isSubmitting }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, delay, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
   }, []);
 
-  const isHigh = priority === 'High';
+  if (!quest) return null;
+
+  const isHigh = quest.urgency === 'urgent' || quest.urgency === 'critical';
+  const priorityText = quest.urgency === 'critical' ? 'Critical' : quest.urgency === 'urgent' ? 'High' : 'Normal';
 
   return (
     <Animated.View
@@ -71,42 +75,49 @@ function RequestCard({ name, distance, bloodType, units, time, priority, onAccep
       ]}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardName}>{name}</Text>
+        <Text style={styles.cardName}>{quest.hospital_name || 'Hospital Request'}</Text>
         <View style={[styles.priorityBadge, isHigh ? styles.priorityHigh : styles.priorityNormal]}>
           <Text style={[styles.priorityText, isHigh ? styles.priorityHighText : styles.priorityNormalText]}>
-            {priority}
+            {priorityText}
           </Text>
         </View>
       </View>
 
       <View style={styles.distanceRow}>
         <Ionicons name="location-outline" size={14} color={COLORS.textMuted} />
-        <Text style={styles.distanceText}>{distance}</Text>
+        <Text style={styles.distanceText}>{quest.distance_meters ? `${(quest.distance_meters / 1000).toFixed(1)} km away` : 'Nearby'}</Text>
       </View>
 
       <View style={styles.detailsRow}>
         <View style={styles.detailChip}>
           <Ionicons name="water" size={12} color={COLORS.primary} />
-          <Text style={styles.bloodTypeChip}>{bloodType}</Text>
+          <Text style={styles.bloodTypeChip}>{quest.request_blood_type || 'Unknown'}</Text>
         </View>
         <View style={styles.detailItem}>
           <Ionicons name="cube-outline" size={13} color={COLORS.textSecondary} />
-          <Text style={styles.detailMeta}>{units}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Ionicons name="time-outline" size={13} color={COLORS.textSecondary} />
-          <Text style={styles.detailMeta}>{time}</Text>
+          <Text style={styles.detailMeta}>{quest.units_needed || 1} units</Text>
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.acceptBtn}
-        onPress={onAccept}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.white} />
-        <Text style={styles.acceptBtnText}>Accept Request</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity
+          style={[styles.acceptBtn, { flex: 1, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border }]}
+          onPress={onDecline}
+          disabled={isSubmitting}
+        >
+          <Text style={[styles.acceptBtnText, { color: COLORS.textPrimary }]}>Decline</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.acceptBtn, { flex: 2, opacity: isSubmitting ? 0.7 : 1 }]}
+          onPress={onAccept}
+          activeOpacity={0.85}
+          disabled={isSubmitting}
+        >
+          <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.white} />
+          <Text style={styles.acceptBtnText}>{isSubmitting ? 'Accepting...' : 'Accept Quest'}</Text>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 }
@@ -114,10 +125,13 @@ function RequestCard({ name, distance, bloodType, units, time, priority, onAccep
 // ─────────────────────────────────────────────────────────────
 // MAIN SCREEN
 // ─────────────────────────────────────────────────────────────
-export default function QuestAlert({ navigation }) {
+export default function QuestAlert({ navigation, route }) {
   const headerAnim = useRef(new Animated.Value(0)).current;
   const filterAnim = useRef(new Animated.Value(0)).current;
   const mapAnim    = useRef(new Animated.Value(0)).current;
+  
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const quest = route.params?.quest;
 
   useEffect(() => {
     Animated.stagger(100, [
@@ -127,11 +141,29 @@ export default function QuestAlert({ navigation }) {
     ]).start();
   }, []);
 
-  const REQUESTS = [
-    { name: 'Gitanjali Hostel (Bhankrota)', distance: '1.2 km', bloodType: 'O+', units: '2 units', time: '2 hours', priority: 'High' },
-    { name: 'Balaji Soni Hospital', distance: '2.5 km', bloodType: 'O+', units: '1 unit', time: '6 hours', priority: 'Normal' },
-    { name: "St. Luke's Medical Center", distance: '3.8 km', bloodType: 'O+', units: '3 units', time: '4 hours', priority: 'High' },
-  ];
+  const handleAccept = async () => {
+    if (!quest) return;
+    setIsSubmitting(true);
+    try {
+      const res = await acceptQuest(quest.id);
+      navigation.replace('QuestAccepted', { quest: { ...quest, ...res } });
+    } catch (err) {
+      console.error('Accept failed', err);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!quest) return;
+    setIsSubmitting(true);
+    try {
+      await declineQuest(quest.id);
+      navigation.goBack();
+    } catch (err) {
+      console.error('Decline failed', err);
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -141,14 +173,14 @@ export default function QuestAlert({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nearby Requests</Text>
+        <Text style={styles.headerTitle}>Quest Alert</Text>
         <View style={{ width: 36 }} />
       </Animated.View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.filterBar, { opacity: filterAnim }]}>
-          <Ionicons name="filter-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.filterText}>Filter by blood type & distance</Text>
+          <Ionicons name="information-circle-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.filterText}>A patient urgently needs your blood type.</Text>
         </Animated.View>
 
         <Animated.View style={{ opacity: mapAnim, marginHorizontal: 16, marginBottom: 16 }}>
@@ -156,14 +188,18 @@ export default function QuestAlert({ navigation }) {
         </Animated.View>
 
         <View style={styles.cardsSection}>
-          {REQUESTS.map((r, i) => (
+          {quest ? (
             <RequestCard
-              key={i}
-              {...r}
-              delay={i * 120}
-              onAccept={() => navigation.navigate('QuestAccepted')}
+              quest={quest}
+              isSubmitting={isSubmitting}
+              onAccept={handleAccept}
+              onDecline={handleDecline}
             />
-          ))}
+          ) : (
+            <Text style={{ textAlign: 'center', color: COLORS.textMuted, marginTop: 20 }}>
+              No active quests to display.
+            </Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

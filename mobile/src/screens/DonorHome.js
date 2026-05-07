@@ -13,10 +13,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { XPBar } from '../components/Shared';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { getMe, getActiveQuest } from '../lib/api';
 
 export default function DonorHome({ navigation }) {
   const [isAvailable, setIsAvailable]               = useState(true);
-  const [isLevelUpAvailable, setIsLevelUpAvailable] = useState(true);
+  const [isLevelUpAvailable, setIsLevelUpAvailable] = useState(false);
+  const [user, setUser] = useState(null);
+  const [activeQuest, setActiveQuest] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const bannerAnim = useRef(new Animated.Value(-80)).current;
 
@@ -29,6 +33,30 @@ export default function DonorHome({ navigation }) {
   ).current;
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        const [meRes, questRes] = await Promise.all([
+          getMe().catch(() => null),
+          getActiveQuest().catch(() => null),
+        ]);
+        if (meRes?.user) {
+          setUser(meRes.user);
+          setIsAvailable(meRes.user.is_available);
+        }
+        if (questRes?.quest) {
+          setActiveQuest(questRes.quest);
+        } else {
+          setActiveQuest(null);
+        }
+      } catch (err) {
+        console.error('Failed to load donor data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+    const interval = setInterval(loadData, 5000);
+
     Animated.stagger(
       80,
       cardAnims.map(({ opacity, translateY }) =>
@@ -38,6 +66,8 @@ export default function DonorHome({ navigation }) {
         ])
       )
     ).start();
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -64,6 +94,15 @@ export default function DonorHome({ navigation }) {
     </Animated.View>
   );
 
+  const userName = user?.name ? user.name.split(' ')[0] : 'Hero';
+  const xp = user?.xp || 0;
+  const level = user?.level || 1;
+  const donationCount = user?.donation_count || 0;
+  const bloodType = user?.blood_type || 'Unknown';
+
+  // Basic target XP scaling
+  const targetXP = level * 1000;
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -82,7 +121,7 @@ export default function DonorHome({ navigation }) {
         <Stagger index={0}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Hi, Juan</Text>
+              <Text style={styles.greeting}>Hi, {userName}</Text>
               <Text style={styles.subGreeting}>Ready to save a life?</Text>
             </View>
             <TouchableOpacity style={styles.bellBtn}>
@@ -96,7 +135,7 @@ export default function DonorHome({ navigation }) {
         <Stagger index={1}>
           <View style={[styles.card, styles.verifiedCard]}>
             <View style={styles.verifiedIconWrap}>
-              <Text style={styles.verifiedIconText}>O</Text>
+              <Text style={styles.verifiedIconText}>{bloodType === 'Unknown' ? '?' : bloodType.charAt(0)}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.verifiedRow}>
@@ -150,11 +189,11 @@ export default function DonorHome({ navigation }) {
             <View style={styles.bloodLevelRow}>
               <Ionicons name="water" size={18} color={COLORS.primary} />
               <Text style={styles.bloodTypeLabel}>
-                Blood type: <Text style={styles.bloodTypeValue}>O+</Text>
+                Blood type: <Text style={styles.bloodTypeValue}>{bloodType}</Text>
               </Text>
             </View>
-            <Text style={styles.levelLabel}>Level 4 Hero</Text>
-            <XPBar currentXP={1240} targetXP={2000} level={4} />
+            <Text style={styles.levelLabel}>Level {level} Hero</Text>
+            <XPBar currentXP={xp} targetXP={targetXP} level={level} />
           </View>
         </Stagger>
 
@@ -165,7 +204,7 @@ export default function DonorHome({ navigation }) {
               <View style={styles.statIconWrap}>
                 <Ionicons name="heart" size={22} color={COLORS.primary} />
               </View>
-              <Text style={styles.statValue}>7</Text>
+              <Text style={styles.statValue}>{donationCount}</Text>
               <Text style={styles.statLabel}>Total Donations</Text>
             </View>
             <View style={[styles.statCard, { marginLeft: 8 }]}>
@@ -207,30 +246,68 @@ export default function DonorHome({ navigation }) {
         </Stagger>
 
         {/* ── RECENT QUESTS ── */}
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={() => navigation.navigate('Quests')}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.sectionTitle}>Recent quests (2)</Text>
-          {[
-            { date: 'Apr 30', type: 'O+', hospital: "St. Luke's" },
-            { date: 'Apr 12', type: 'O+', hospital: 'PGH' },
-          ].map((q, i) => (
-            <View key={i} style={styles.questRow}>
-              <View style={styles.questDot}>
-                <Ionicons name="water" size={14} color={COLORS.primary} />
+        <Stagger index={6}>
+          <TouchableOpacity 
+            style={styles.card} 
+            onPress={() => navigation.navigate('Quests')}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.sectionTitle}>Recent quests (2)</Text>
+            {[
+              { date: 'Apr 30', type: 'O+', hospital: "St. Luke's" },
+              { date: 'Apr 12', type: 'O+', hospital: 'PGH' },
+            ].map((q, i) => (
+              <View key={i} style={styles.questRow}>
+                <View style={styles.questDot}>
+                  <Ionicons name="water" size={14} color={COLORS.primary} />
+                </View>
+                <Text style={styles.questText}>
+                  {q.date}  <Text style={styles.questType}>{q.type}</Text>  {q.hospital}
+                </Text>
               </View>
-              <Text style={styles.questText}>
-                {q.date}  <Text style={styles.questType}>{q.type}</Text>  {q.hospital}
-              </Text>
+            ))}
+            <View style={styles.viewHistoryBtn}>
+              <Text style={styles.viewHistoryText}>View full history</Text>
+              <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
             </View>
-          ))}
-          <View style={styles.viewHistoryBtn}>
-            <Text style={styles.viewHistoryText}>View full history</Text>
-            <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </Stagger>
+
+        {/* ── LIVE QUEST CTA ── */}
+        {activeQuest && (
+          <Stagger index={7}>
+            <TouchableOpacity
+              style={[styles.demoBtn, { borderColor: COLORS.primary, backgroundColor: COLORS.primarySurface, borderRadius: RADIUS.md, borderWidth: 1, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }]}
+              onPress={() => {
+                if (activeQuest.status === 'pending') navigation.navigate('QuestAlert', { quest: activeQuest });
+                else navigation.navigate('RiderEnRoute', { quest: activeQuest });
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="flash-outline" size={18} color={COLORS.primary} />
+              <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 14 }}>
+                {activeQuest.status === 'pending' ? '🔥 New Quest Available! Tap to view.' : '🚗 Quest in progress. Tap to track.'}
+              </Text>
+            </TouchableOpacity>
+          </Stagger>
+        )}
+
+        {/* ── URGENT REQUESTS card ── */}
+        {!activeQuest && (
+          <Stagger index={7}>
+            <View style={styles.urgentCard}>
+              <View style={styles.urgentLeft}>
+                <Ionicons name="location" size={22} color={COLORS.white} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.urgentTitleRow}>
+                    <Text style={styles.urgentTitle}>Standby for requests</Text>
+                  </View>
+                  <Text style={styles.urgentSub}>We will notify you if there is a match nearby.</Text>
+                </View>
+              </View>
+            </View>
+          </Stagger>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -544,6 +621,35 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     fontSize: 14,
+  },
+
+  // Urgent card
+  urgentCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    padding: 16,
+    marginBottom: 12,
+    ...SHADOWS.card,
+  },
+  urgentLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  urgentTitle: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  urgentSub: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  urgentTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
 });

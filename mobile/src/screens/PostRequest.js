@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { getHospitals, createRequest } from '../lib/api';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 const units = ['1', '2', '3+'];
@@ -14,19 +15,49 @@ const urgencies = [
   { id: 'urgent',   label: 'Urgent (within 20 min)', color: COLORS.warning,   bg: COLORS.warningLight },
   { id: 'critical', label: 'Critical (within 10 min)', color: COLORS.primary,   bg: COLORS.primarySurface },
 ];
-const hospitals = ["St. Luke's BGC", 'Makati Medical Center', 'Philippine General Hospital', 'Asian Hospital'];
 
 export default function PostRequest({ navigation }) {
   const [selectedBlood, setSelectedBlood] = useState('O+');
   const [selectedUnit, setSelectedUnit] = useState('2');
   const [selectedUrgency, setSelectedUrgency] = useState('urgent');
-  const [selectedHospital, setSelectedHospital] = useState(hospitals[0]);
+  const [hospitals, setHospitals] = useState([]);
+  const [selectedHospital, setSelectedHospital] = useState(null);
   const [showHospitals, setShowHospitals] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    async function loadHospitals() {
+      try {
+        const res = await getHospitals();
+        if (res?.hospitals?.length > 0) {
+          setHospitals(res.hospitals);
+          setSelectedHospital(res.hospitals[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load hospitals:', err);
+      }
+    }
+    loadHospitals();
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
+
+  const handleSubmit = async () => {
+    if (!selectedHospital) return;
+    setIsSubmitting(true);
+    try {
+      await createRequest({
+        hospital_id: selectedHospital.id,
+        blood_type: selectedBlood,
+        units_needed: parseInt(selectedUnit.replace('+', ''), 10) || 1,
+        urgency: selectedUrgency
+      });
+      navigation.goBack();
+    } catch (err) {
+      console.error('Submit failed', err);
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -86,19 +117,19 @@ export default function PostRequest({ navigation }) {
             onPress={() => setShowHospitals(!showHospitals)}
             activeOpacity={0.7}
           >
-            <Text style={styles.selectText}>{selectedHospital}</Text>
+            <Text style={styles.selectText}>{selectedHospital ? selectedHospital.name : 'Loading...'}</Text>
             <Ionicons name={showHospitals ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
           {showHospitals && (
             <View style={styles.dropdown}>
               {hospitals.map(h => (
                 <TouchableOpacity
-                  key={h}
+                  key={h.id}
                   style={styles.dropdownItem}
                   onPress={() => { setSelectedHospital(h); setShowHospitals(false); }}
                 >
-                  <Text style={[styles.dropdownText, selectedHospital === h && styles.dropdownTextActive]}>{h}</Text>
-                  {selectedHospital === h && <Ionicons name="checkmark" size={18} color={COLORS.primary} />}
+                  <Text style={[styles.dropdownText, selectedHospital?.id === h.id && styles.dropdownTextActive]}>{h.name}</Text>
+                  {selectedHospital?.id === h.id && <Ionicons name="checkmark" size={18} color={COLORS.primary} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -151,12 +182,19 @@ export default function PostRequest({ navigation }) {
 
         {/* Submit */}
         <TouchableOpacity
-          style={styles.submitButton}
-          onPress={() => navigation.navigate('RequestStatus')}
+          style={[styles.submitButton, isSubmitting && { opacity: 0.7 }]}
+          onPress={handleSubmit}
           activeOpacity={0.88}
+          disabled={isSubmitting || !selectedHospital}
         >
-          <Ionicons name="paper-plane-outline" size={18} color={COLORS.white} />
-          <Text style={styles.submitButtonText}>Post Request</Text>
+          {isSubmitting ? (
+            <Text style={styles.submitButtonText}>Posting...</Text>
+          ) : (
+            <>
+              <Ionicons name="paper-plane-outline" size={18} color={COLORS.white} />
+              <Text style={styles.submitButtonText}>Post Request</Text>
+            </>
+          )}
         </TouchableOpacity>
       </Animated.ScrollView>
     </SafeAreaView>
