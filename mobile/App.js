@@ -25,6 +25,7 @@ import HospitalHome from './src/screens/HospitalHome';
 import CreateBloodRequest from './src/screens/CreateBloodRequest';
 import HospitalRequests from './src/screens/HospitalRequests';
 import HospitalHistory from './src/screens/HospitalHistory';
+import RequesterHistory from './src/screens/RequesterHistory';
 import HospitalRequestTracking from './src/screens/HospitalRequestTracking';
 
 const Stack = createNativeStackNavigator();
@@ -58,7 +59,15 @@ function DonorTabs() {
       },
     })}>
       <Tab.Screen name="Home"    component={DonorHome} options={{ title: 'Home' }} />
-      <Tab.Screen name="Quests"  component={Quests}    options={{ title: 'Quests' }} />
+      <Tab.Screen 
+        name="Quests"  
+        component={Quests}    
+        options={{ 
+          title: 'Quests',
+          tabBarBadge: 3,
+          tabBarBadgeStyle: { backgroundColor: COLORS.primary, color: COLORS.white, fontSize: 10 }
+        }} 
+      />
       <Tab.Screen name="Badges"  component={Badges}    options={{ title: 'Badges' }} />
       <Tab.Screen name="Profile" component={Profile}   options={{ title: 'Profile' }} />
     </Tab.Navigator>
@@ -77,11 +86,13 @@ function RequesterTabs() {
       tabBarIcon: ({ focused, color, size }) => {
         let iconName;
         if (route.name === 'Home')    iconName = focused ? 'home' : 'home-outline';
+        if (route.name === 'History') iconName = focused ? 'time' : 'time-outline';
         if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
     })}>
       <Tab.Screen name="Home"    component={RequesterHome} options={{ title: 'Home' }} />
+      <Tab.Screen name="History" component={RequesterHistory} options={{ title: 'History' }} />
       <Tab.Screen name="Profile" component={Profile}       options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

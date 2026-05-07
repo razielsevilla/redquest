@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, SafeAreaView, StatusBar,
+  ScrollView, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as storage from '../lib/storage';
@@ -134,7 +135,7 @@ export default function Profile({ navigation }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
-  scroll: { paddingHorizontal: 18, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 18, paddingTop: 6, paddingBottom: 40 },
 
   avatarSection: { alignItems: 'center', paddingVertical: 28 },
   avatarCircle: {

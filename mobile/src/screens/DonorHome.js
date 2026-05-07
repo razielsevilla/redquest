@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -6,7 +7,6 @@ import {
   Switch,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Animated,
   StatusBar,
 } from 'react-native';
@@ -219,14 +219,18 @@ export default function DonorHome({ navigation }) {
 
         {/* ── REWARDS & POINTS card ── */}
         <Stagger index={5}>
-          <TouchableOpacity style={[styles.card, styles.rewardsCard]} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={[styles.card, styles.rewardsCard]} 
+            onPress={() => navigation.navigate('Badges')}
+            activeOpacity={0.85}
+          >
             <View style={styles.rewardsLeft}>
               <View style={styles.rewardsIconWrap}>
                 <Ionicons name="trophy" size={22} color={COLORS.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rewardsTitle}>Rewards & Points</Text>
-                <Text style={styles.rewardsSub}>2,350 VitaPoints earned</Text>
+                <Text style={styles.rewardsSub}>2,350 RedQuest points earned</Text>
                 <View style={styles.rewardsBadgeRow}>
                   <View style={[styles.badge, styles.badgeGreen]}>
                     <Text style={styles.badgeTextGreen}>4 Badges</Text>
@@ -242,57 +246,67 @@ export default function DonorHome({ navigation }) {
         </Stagger>
 
         {/* ── RECENT QUESTS ── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Recent quests (2)</Text>
-          {[
-            { date: 'Apr 30', type: 'O+', hospital: "St. Luke's" },
-            { date: 'Apr 12', type: 'O+', hospital: 'PGH' },
-          ].map((q, i) => (
-            <View key={i} style={styles.questRow}>
-              <View style={styles.questDot}>
-                <Ionicons name="water" size={14} color={COLORS.primary} />
+        <Stagger index={6}>
+          <TouchableOpacity 
+            style={styles.card} 
+            onPress={() => navigation.navigate('Quests')}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.sectionTitle}>Recent quests (2)</Text>
+            {[
+              { date: 'Apr 30', type: 'O+', hospital: "St. Luke's" },
+              { date: 'Apr 12', type: 'O+', hospital: 'PGH' },
+            ].map((q, i) => (
+              <View key={i} style={styles.questRow}>
+                <View style={styles.questDot}>
+                  <Ionicons name="water" size={14} color={COLORS.primary} />
+                </View>
+                <Text style={styles.questText}>
+                  {q.date}  <Text style={styles.questType}>{q.type}</Text>  {q.hospital}
+                </Text>
               </View>
-              <Text style={styles.questText}>
-                {q.date}  <Text style={styles.questType}>{q.type}</Text>  {q.hospital}
-              </Text>
+            ))}
+            <View style={styles.viewHistoryBtn}>
+              <Text style={styles.viewHistoryText}>View full history</Text>
+              <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
             </View>
-          ))}
-          <TouchableOpacity style={styles.viewHistoryBtn}>
-            <Text style={styles.viewHistoryText}>View full history</Text>
-            <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
           </TouchableOpacity>
-        </View>
+        </Stagger>
 
         {/* ── LIVE QUEST CTA ── */}
         {activeQuest && (
-          <TouchableOpacity
-            style={[styles.demoBtn, { borderColor: COLORS.primary, backgroundColor: COLORS.primarySurface }]}
-            onPress={() => {
-              if (activeQuest.status === 'pending') navigation.navigate('QuestAlert', { quest: activeQuest });
-              else navigation.navigate('RiderEnRoute', { quest: activeQuest });
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="flash-outline" size={18} color={COLORS.primary} />
-            <Text style={[styles.demoBtnText, { color: COLORS.primary }]}>
-              {activeQuest.status === 'pending' ? '🔥 New Quest Available! Tap to view.' : '🚗 Quest in progress. Tap to track.'}
-            </Text>
-          </TouchableOpacity>
+          <Stagger index={7}>
+            <TouchableOpacity
+              style={[styles.demoBtn, { borderColor: COLORS.primary, backgroundColor: COLORS.primarySurface, borderRadius: RADIUS.md, borderWidth: 1, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }]}
+              onPress={() => {
+                if (activeQuest.status === 'pending') navigation.navigate('QuestAlert', { quest: activeQuest });
+                else navigation.navigate('RiderEnRoute', { quest: activeQuest });
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="flash-outline" size={18} color={COLORS.primary} />
+              <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 14 }}>
+                {activeQuest.status === 'pending' ? '🔥 New Quest Available! Tap to view.' : '🚗 Quest in progress. Tap to track.'}
+              </Text>
+            </TouchableOpacity>
+          </Stagger>
         )}
 
         {/* ── URGENT REQUESTS card ── */}
         {!activeQuest && (
-          <View style={styles.urgentCard}>
-            <View style={styles.urgentLeft}>
-              <Ionicons name="location" size={22} color={COLORS.white} />
-              <View style={{ flex: 1 }}>
-                <View style={styles.urgentTitleRow}>
-                  <Text style={styles.urgentTitle}>Standby for requests</Text>
+          <Stagger index={7}>
+            <View style={styles.urgentCard}>
+              <View style={styles.urgentLeft}>
+                <Ionicons name="location" size={22} color={COLORS.white} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.urgentTitleRow}>
+                    <Text style={styles.urgentTitle}>Standby for requests</Text>
+                  </View>
+                  <Text style={styles.urgentSub}>We will notify you if there is a match nearby.</Text>
                 </View>
-                <Text style={styles.urgentSub}>We will notify you if there is a match nearby.</Text>
               </View>
             </View>
-          </View>
+          </Stagger>
         )}
 
       </ScrollView>
@@ -302,10 +316,7 @@ export default function DonorHome({ navigation }) {
 
 // ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background, paddingTop: 10, },
 
   // Level-up banner
   levelUpBanner: {
@@ -612,77 +623,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Urgent requests card
+  // Urgent card
   urgentCard: {
     backgroundColor: COLORS.primary,
     borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
+    ...SHADOWS.card,
   },
   urgentLeft: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    marginBottom: 12,
+  },
+  urgentTitle: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  urgentSub: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginTop: 4,
   },
   urgentTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  urgentTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  urgentBadge: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  urgentBadgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  urgentSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  urgentTypes: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  urgentTypeChip: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  urgentTypeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700',
+    justifyContent: 'space-between',
   },
 
-  // Demo button
-  demoBtn: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-    borderWidth: 1.5,
-    borderColor: COLORS.inputBorder,
-  },
-  demoBtnText: {
-    color: COLORS.textPrimary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
 });

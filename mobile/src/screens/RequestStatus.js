@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
   ScrollView, StatusBar, Animated, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Rect, Circle, Path, Polyline } from 'react-native-svg';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 import { getRequestDetails } from '../lib/api';
 
@@ -86,13 +88,106 @@ function PulseSpinner() {
   );
 }
 
+// ─── Map View Component ─────────────────────────────────────
+function MapView({ isReached }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const riderPos = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.4, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+
+    if (!isReached) {
+      Animated.timing(riderPos, {
+        toValue: 1,
+        duration: 15000,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [isReached]);
+
+  const riderX = riderPos.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [98, 228, 338],
+  });
+  const riderY = riderPos.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [240, 162, 77],
+  });
+
+  return (
+    <View style={mapStyles.wrapper}>
+      <Svg width="100%" height="100%" viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice">
+        <Rect x="0" y="0" width="480" height="300" fill="#F1F5F9" />
+        <Rect x="20" y="20" width="100" height="80" fill="#E2E8F0" rx="8" />
+        <Rect x="140" y="20" width="150" height="60" fill="#E2E8F0" rx="8" />
+        <Rect x="310" y="20" width="150" height="80" fill="#E2E8F0" rx="8" />
+        <Rect x="20" y="120" width="100" height="150" fill="#E2E8F0" rx="8" />
+        <Rect x="140" y="100" width="150" height="80" fill="#E2E8F0" rx="8" />
+        <Rect x="310" y="120" width="150" height="150" fill="#E2E8F0" rx="8" />
+        
+        <Rect x="0" y="100" width="480" height="16" fill="white" />
+        <Rect x="120" y="0" width="16" height="300" fill="white" />
+        <Rect x="290" y="0" width="16" height="300" fill="white" />
+
+        <Polyline
+          points="98,270 98,162 228,162 228,77 338,77"
+          fill="none"
+          stroke={COLORS.primaryMuted}
+          strokeWidth="4"
+          strokeDasharray="8 4"
+        />
+
+        <Path
+          d="M338 30 C338 10 368 10 368 30 C368 50 353 65 353 65 C353 65 338 50 338 30 Z"
+          fill={COLORS.primary}
+          transform="translate(-15, 10)"
+        />
+
+        <AnimatedCircle cx={riderX} cy={riderY} r="8" fill={isReached ? COLORS.success : COLORS.info} />
+      </Svg>
+      
+      {!isReached && (
+        <View style={mapStyles.pulseWrap}>
+          <Animated.View style={[mapStyles.pulse, { transform: [{ scale: pulseAnim }] }]} />
+        </View>
+      )}
+
+      <View style={mapStyles.overlay}>
+        <View style={mapStyles.overlayBadge}>
+          <Ionicons name="navigate" size={14} color={isReached ? COLORS.success : COLORS.info} />
+          <Text style={mapStyles.overlayText}>
+            {isReached ? "Rider has arrived!" : "Rider is en route"}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const mapStyles = StyleSheet.create({
+  wrapper: { height: 180, backgroundColor: '#F1F5F9', position: 'relative', borderRadius: RADIUS.lg, overflow: 'hidden', marginBottom: 14, ...SHADOWS.small },
+  pulseWrap: { position: 'absolute', left: '18%', bottom: '20%', width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  pulse: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.info, opacity: 0.6 },
+  overlay: { position: 'absolute', top: 12, left: 12 },
+  overlayBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, ...SHADOWS.small },
+  overlayText: { fontSize: 12, fontWeight: '700', color: COLORS.textPrimary },
+});
+
 // ─── Main Screen ────────────────────────────────────────────
 export default function RequestStatus({ navigation, route }) {
   const reqId = route.params?.request?.id;
   const [requestObj, setRequestObj] = useState(route.params?.request || null);
   const [activeQuest, setActiveQuest] = useState(null);
   const [status, setStatus] = useState('matching');
+  const [isArrived, setIsArrived] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const arriveBtnAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
@@ -227,6 +322,10 @@ export default function RequestStatus({ navigation, route }) {
                 <Text style={styles.dispatchSub}>Rider has picked up the blood unit</Text>
               </View>
             </View>
+
+            {/* Map View */}
+            <MapView isReached={isArrived} />
+
             <View style={styles.infoCard}>
               <Text style={styles.infoCardLabel}>RIDER EN ROUTE</Text>
               <View style={styles.personRow}>
@@ -239,14 +338,33 @@ export default function RequestStatus({ navigation, route }) {
                 </View>
               </View>
             </View>
-            <View style={styles.etaPill}>
-              <Ionicons name="time-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.etaPillText}>Arriving at hospital in <Text style={styles.etaBold}>~15 minutes</Text></Text>
-            </View>
-            <View style={styles.warningPill}>
-              <Ionicons name="medkit-outline" size={16} color={COLORS.warning} />
-              <Text style={styles.warningText}>Blood bank should be ready for receiving.</Text>
-            </View>
+
+            {!isArrived ? (
+              <View>
+                <View style={styles.etaPill}>
+                  <Ionicons name="time-outline" size={16} color={COLORS.primary} />
+                  <Text style={styles.etaPillText}>Arriving at hospital in <Text style={styles.etaBold}>~15 minutes</Text></Text>
+                </View>
+                <View style={styles.warningPill}>
+                  <Ionicons name="medkit-outline" size={16} color={COLORS.warning} />
+                  <Text style={styles.warningText}>Blood bank should be ready for receiving.</Text>
+                </View>
+              </View>
+            ) : (
+              <Animated.View style={{ 
+                transform: [{ translateY: arriveBtnAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+                opacity: arriveBtnAnim 
+              }}>
+                <TouchableOpacity 
+                  style={[styles.homeBtn, { backgroundColor: COLORS.success, marginBottom: 14 }]} 
+                  onPress={() => setStatus('done')}
+                  activeOpacity={0.88}
+                >
+                  <Text style={styles.homeBtnText}>Rider has Arrived! Confirm Delivery</Text>
+                  <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
         )}
 

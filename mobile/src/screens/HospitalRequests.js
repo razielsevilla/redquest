@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Animated,
 } from 'react-native';
@@ -216,10 +216,7 @@ export default function HospitalRequests({ navigation }) {
 
 // ─── Styles ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background, paddingTop: 10, },
 
   // Header
   header: {

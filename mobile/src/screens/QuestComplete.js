@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
   ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

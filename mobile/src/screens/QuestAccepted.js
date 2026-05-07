@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
   ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -140,8 +141,11 @@ export default function QuestAccepted({ navigation, route }) {
         </Fade>
 
         {/* Continue button */}
-        <TouchableOpacity style={styles.primaryBtn}
-          onPress={() => navigation.navigate('RiderEnRoute', { quest })} activeOpacity={0.85}>
+        <TouchableOpacity 
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate('RiderEnRoute', { quest })} 
+          activeOpacity={0.85}
+        >
           <Text style={styles.primaryBtnText}>Track Rider</Text>
           <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
         </TouchableOpacity>
