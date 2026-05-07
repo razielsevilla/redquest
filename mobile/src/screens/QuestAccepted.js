@@ -1,32 +1,22 @@
 import React, { useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  Animated,
+  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  ScrollView, StatusBar, Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 export default function QuestAccepted({ navigation }) {
-
-  // Staggered entrance animations
   const anims = useRef(
     Array.from({ length: 5 }, () => ({
       opacity: new Animated.Value(0),
       translateY: new Animated.Value(28),
     }))
   ).current;
-
-  // Pulse animation for the checkmark
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Stagger cards in
-    Animated.stagger(
-      90,
+    Animated.stagger(90,
       anims.map(({ opacity, translateY }) =>
         Animated.parallel([
           Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
@@ -34,8 +24,6 @@ export default function QuestAccepted({ navigation }) {
         ])
       )
     ).start();
-
-    // Pulse the check icon
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.12, duration: 800, useNativeDriver: true }),
@@ -45,35 +33,33 @@ export default function QuestAccepted({ navigation }) {
   }, []);
 
   const Fade = ({ i, children, style }) => (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: anims[i].opacity,
-          transform: [{ translateY: anims[i].translateY }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
+    <Animated.View style={[style, {
+      opacity: anims[i].opacity,
+      transform: [{ translateY: anims[i].translateY }],
+    }]}>{children}</Animated.View>
   );
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F7" />
-
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <View style={styles.headerBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={20} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerBarTitle}>Quest Details</Text>
+        <View style={{ width: 36 }} />
+      </View>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* ── HERO: Accepted badge ── */}
+        {/* Hero */}
         <Fade i={0} style={styles.heroSection}>
           <Animated.View style={[styles.checkCircle, { transform: [{ scale: pulseAnim }] }]}>
-            <Text style={styles.checkIcon}>✓</Text>
+            <Ionicons name="checkmark" size={36} color={COLORS.white} />
           </Animated.View>
           <Text style={styles.heroTitle}>Quest Accepted!</Text>
           <Text style={styles.heroSubtitle}>A rider has been dispatched to you.</Text>
         </Fade>
 
-        {/* ── STATUS card ── */}
+        {/* Status card */}
         <Fade i={1}>
           <View style={[styles.card, styles.statusCard]}>
             <View style={styles.statusDot} />
@@ -84,13 +70,13 @@ export default function QuestAccepted({ navigation }) {
           </View>
         </Fade>
 
-        {/* ── RIDER card ── */}
+        {/* Rider card */}
         <Fade i={2}>
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Your Rider</Text>
             <View style={styles.riderRow}>
               <View style={styles.riderAvatar}>
-                <Text style={styles.riderAvatarText}>🏍️</Text>
+                <Ionicons name="bicycle" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.riderInfo}>
                 <Text style={styles.riderName}>Ramon Santos</Text>
@@ -104,17 +90,19 @@ export default function QuestAccepted({ navigation }) {
           </View>
         </Fade>
 
-        {/* ── DESTINATION card ── */}
+        {/* Destination card */}
         <Fade i={3}>
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Destination</Text>
             <View style={styles.destRow}>
-              <Text style={styles.destIcon}>🏥</Text>
+              <View style={styles.destIconWrap}>
+                <Ionicons name="medkit" size={22} color={COLORS.primary} />
+              </View>
               <View style={styles.destInfo}>
                 <Text style={styles.destName}>St. Luke's Medical Center</Text>
                 <Text style={styles.destDetail}>BGC Blood Bank, Floor 2</Text>
                 <View style={styles.distRow}>
-                  <Text style={styles.distIcon}>📍</Text>
+                  <Ionicons name="location-outline" size={14} color={COLORS.primary} />
                   <Text style={styles.distText}>1.3 km from you</Text>
                 </View>
               </View>
@@ -122,294 +110,131 @@ export default function QuestAccepted({ navigation }) {
           </View>
         </Fade>
 
-        {/* ── QUEST DETAILS card ── */}
+        {/* Quest Details */}
         <Fade i={4}>
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Quest Details</Text>
             <View style={styles.questDetailsRow}>
               <View style={styles.questDetailChip}>
+                <Ionicons name="water" size={16} color={COLORS.primary} />
                 <Text style={styles.questDetailKey}>Blood Type</Text>
                 <Text style={styles.questDetailVal}>O+</Text>
               </View>
               <View style={styles.questDetailChip}>
+                <Ionicons name="cube-outline" size={16} color={COLORS.textSecondary} />
                 <Text style={styles.questDetailKey}>Units</Text>
                 <Text style={styles.questDetailVal}>2</Text>
               </View>
               <View style={styles.questDetailChip}>
+                <Ionicons name="alert-circle-outline" size={16} color={COLORS.primary} />
                 <Text style={styles.questDetailKey}>Priority</Text>
-                <Text style={[styles.questDetailVal, { color: '#D32F2F' }]}>High</Text>
+                <Text style={[styles.questDetailVal, { color: COLORS.primary }]}>High</Text>
               </View>
             </View>
             <View style={styles.infoNote}>
-              <Text style={styles.infoNoteText}>
-                🚗 Transport is covered. A rider will pick you up.
-              </Text>
+              <Ionicons name="car-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.infoNoteText}>Transport is covered. A rider will pick you up.</Text>
             </View>
           </View>
         </Fade>
 
-        {/* ── DEMO button ── */}
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => navigation.navigate('RiderEnRoute')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.primaryBtnText}>Demo: Rider Arrives →</Text>
+        {/* Demo button */}
+        <TouchableOpacity style={styles.primaryBtn}
+          onPress={() => navigation.navigate('RiderEnRoute')} activeOpacity={0.85}>
+          <Text style={styles.primaryBtnText}>Demo: Rider Arrives</Text>
+          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
         </TouchableOpacity>
 
-        {/* ── Cancel link ── */}
-        <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={() => navigation.navigate('Donor')}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.cancelBtn}
+          onPress={() => navigation.navigate('Donor')} activeOpacity={0.7}>
           <Text style={styles.cancelText}>Can't make it? Cancel</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
-  },
-  scroll: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { padding: 20, paddingBottom: 40 },
 
-  // Hero section
-  heroSection: {
-    alignItems: 'center',
-    paddingVertical: 28,
+  headerBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
   },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface,
+    alignItems: 'center', justifyContent: 'center', ...SHADOWS.small,
+  },
+  headerBarTitle: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary, letterSpacing: -0.3 },
+
+  heroSection: { alignItems: 'center', paddingVertical: 28 },
   checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#D32F2F',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16, ...SHADOWS.button,
   },
-  checkIcon: {
-    color: '#FFFFFF',
-    fontSize: 36,
-    fontWeight: '800',
-  },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-  },
+  heroTitle: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.5, marginBottom: 6 },
+  heroSubtitle: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
 
-  // Shared card
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
+  card: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, padding: 16, marginBottom: 12, ...SHADOWS.card },
   cardLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#AAAAAA',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
+    fontSize: 11, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase',
+    letterSpacing: 0.8, marginBottom: 12,
   },
 
-  // Status card
   statusCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FFF4',
-    borderWidth: 1,
-    borderColor: '#C8F0D4',
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.successLight,
+    borderWidth: 1, borderColor: '#C8E6C9', gap: 12,
   },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
-  },
+  statusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.success },
   statusTextWrap: { flex: 1 },
-  statusTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  statusSub: {
-    fontSize: 12,
-    color: '#555555',
-    marginTop: 2,
-    lineHeight: 17,
-  },
+  statusTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
+  statusSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, lineHeight: 17 },
 
-  // Rider card
-  riderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  riderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   riderAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  riderAvatarText: { fontSize: 26 },
   riderInfo: { flex: 1 },
-  riderName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  riderPlate: {
-    fontSize: 13,
-    color: '#888888',
-    marginTop: 2,
-  },
+  riderName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  riderPlate: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
   etaBadge: {
-    backgroundColor: '#FFF3E0',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    alignItems: 'center',
+    backgroundColor: COLORS.warningLight, borderRadius: RADIUS.sm, paddingVertical: 8,
+    paddingHorizontal: 14, alignItems: 'center',
   },
-  etaLabel: {
-    fontSize: 10,
-    color: '#F59E0B',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  etaValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#F59E0B',
-    marginTop: 2,
-  },
+  etaLabel: { fontSize: 10, color: COLORS.warning, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  etaValue: { fontSize: 16, fontWeight: '800', color: COLORS.warning, marginTop: 2 },
 
-  // Destination card
-  destRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+  destRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  destIconWrap: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primarySurface,
+    alignItems: 'center', justifyContent: 'center', marginTop: 2,
   },
-  destIcon: { fontSize: 26, marginTop: 2 },
   destInfo: { flex: 1 },
-  destName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  destDetail: {
-    fontSize: 13,
-    color: '#888888',
-    marginTop: 3,
-  },
-  distRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  distIcon: { fontSize: 13 },
-  distText: {
-    fontSize: 13,
-    color: '#D32F2F',
-    fontWeight: '600',
-  },
+  destName: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  destDetail: { fontSize: 13, color: COLORS.textMuted, marginTop: 3 },
+  distRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  distText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
 
-  // Quest details
-  questDetailsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
+  questDetailsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   questDetailChip: {
-    flex: 1,
-    backgroundColor: '#F7F7F7',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
+    flex: 1, backgroundColor: COLORS.background, borderRadius: RADIUS.sm, padding: 10, alignItems: 'center', gap: 4,
   },
-  questDetailKey: {
-    fontSize: 11,
-    color: '#AAAAAA',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  questDetailVal: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
+  questDetailKey: { fontSize: 10, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  questDetailVal: { fontSize: 16, fontWeight: '800', color: COLORS.textPrimary },
   infoNote: {
-    backgroundColor: '#FFF8E1',
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: COLORS.warningLight, borderRadius: 8, padding: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  infoNoteText: {
-    fontSize: 13,
-    color: '#555555',
-    lineHeight: 18,
-  },
+  infoNoteText: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 18, flex: 1 },
 
-  // Buttons
   primaryBtn: {
-    backgroundColor: '#D32F2F',
-    borderRadius: 50,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    backgroundColor: COLORS.primary, borderRadius: RADIUS.full, paddingVertical: 15,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6,
+    marginTop: 8, marginBottom: 12, ...SHADOWS.button,
   },
-  primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  cancelBtn: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  cancelText: {
-    color: '#AAAAAA',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  primaryBtnText: { color: COLORS.white, fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
+  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
+  cancelText: { color: COLORS.textMuted, fontSize: 14, fontWeight: '600' },
 });

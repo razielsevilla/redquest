@@ -1,24 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  TextInput,
-  StatusBar,
-  Animated,
-  Platform,
+  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  ScrollView, TextInput, StatusBar, Animated, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 const units = ['1', '2', '3+'];
 const urgencies = [
-  { id: 'standard', label: 'Standard (within 1 hr)', color: '#9CA3AF', bg: '#F3F4F6' },
-  { id: 'urgent', label: 'Urgent (within 20 min)', color: '#F59E0B', bg: '#FFFBEB' },
-  { id: 'critical', label: 'Critical (within 10 min)', color: '#EF4444', bg: '#FEF2F2' },
+  { id: 'standard', label: 'Standard (within 1 hr)', color: COLORS.textMuted, bg: COLORS.background },
+  { id: 'urgent',   label: 'Urgent (within 20 min)', color: COLORS.warning,   bg: COLORS.warningLight },
+  { id: 'critical', label: 'Critical (within 10 min)', color: COLORS.primary,   bg: COLORS.primarySurface },
 ];
 const hospitals = ["St. Luke's BGC", 'Makati Medical Center', 'Philippine General Hospital', 'Asian Hospital'];
 
@@ -36,12 +29,11 @@ export default function PostRequest({ navigation }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Post a Request</Text>
       </View>
@@ -51,7 +43,7 @@ export default function PostRequest({ navigation }) {
         showsVerticalScrollIndicator={false}
         style={{ opacity: fadeAnim }}
       >
-        {/* ── Blood Type ── */}
+        {/* Blood Type */}
         <View style={styles.card}>
           <Text style={styles.label}>Blood type needed</Text>
           <View style={styles.grid}>
@@ -62,15 +54,13 @@ export default function PostRequest({ navigation }) {
                 onPress={() => setSelectedBlood(type)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.gridText, selectedBlood === type && styles.gridTextActive]}>
-                  {type}
-                </Text>
+                <Text style={[styles.gridText, selectedBlood === type && styles.gridTextActive]}>{type}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* ── Units Needed ── */}
+        {/* Units */}
         <View style={styles.card}>
           <Text style={styles.label}>Units needed</Text>
           <View style={styles.row}>
@@ -81,15 +71,13 @@ export default function PostRequest({ navigation }) {
                 onPress={() => setSelectedUnit(unit)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.gridText, selectedUnit === unit && styles.gridTextActive]}>
-                  {unit}
-                </Text>
+                <Text style={[styles.gridText, selectedUnit === unit && styles.gridTextActive]}>{unit}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* ── Hospital ── */}
+        {/* Hospital */}
         <View style={styles.card}>
           <Text style={styles.label}>Hospital</Text>
           <TouchableOpacity
@@ -98,11 +86,7 @@ export default function PostRequest({ navigation }) {
             activeOpacity={0.7}
           >
             <Text style={styles.selectText}>{selectedHospital}</Text>
-            <Ionicons
-              name={showHospitals ? 'chevron-up' : 'chevron-down'}
-              size={18}
-              color="#888888"
-            />
+            <Ionicons name={showHospitals ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
           {showHospitals && (
             <View style={styles.dropdown}>
@@ -112,19 +96,15 @@ export default function PostRequest({ navigation }) {
                   style={styles.dropdownItem}
                   onPress={() => { setSelectedHospital(h); setShowHospitals(false); }}
                 >
-                  <Text style={[styles.dropdownText, selectedHospital === h && styles.dropdownTextActive]}>
-                    {h}
-                  </Text>
-                  {selectedHospital === h && (
-                    <Ionicons name="checkmark" size={18} color="#D32F2F" />
-                  )}
+                  <Text style={[styles.dropdownText, selectedHospital === h && styles.dropdownTextActive]}>{h}</Text>
+                  {selectedHospital === h && <Ionicons name="checkmark" size={18} color={COLORS.primary} />}
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
-        {/* ── Urgency ── */}
+        {/* Urgency */}
         <View style={styles.card}>
           <Text style={styles.label}>Urgency</Text>
           {urgencies.map(urgency => (
@@ -144,39 +124,37 @@ export default function PostRequest({ navigation }) {
               </View>
               <Text style={[
                 styles.radioLabel,
-                selectedUrgency === urgency.id && { color: '#1A1A1A', fontWeight: '600' },
-              ]}>
-                {urgency.label}
-              </Text>
+                selectedUrgency === urgency.id && { color: COLORS.textPrimary, fontWeight: '600' },
+              ]}>{urgency.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* ── Notes ── */}
+        {/* Notes */}
         <View style={styles.card}>
           <Text style={styles.label}>Notes (optional)</Text>
           <TextInput
             style={styles.textInput}
             placeholder="e.g. Post-surgery, ICU bed 3"
-            placeholderTextColor="#AAAAAA"
+            placeholderTextColor={COLORS.textPlaceholder}
             multiline
           />
         </View>
 
-        {/* ── Transport Fee ── */}
+        {/* Transport Fee */}
         <View style={styles.feePill}>
-          <Ionicons name="bicycle-outline" size={18} color="#D32F2F" />
+          <Ionicons name="bicycle-outline" size={18} color={COLORS.primary} />
           <Text style={styles.feeText}>Transport fee: <Text style={styles.feeBold}>₱150</Text></Text>
           <Text style={styles.feeSub}>Rider cost, paid by you</Text>
         </View>
 
-        {/* ── Submit ── */}
+        {/* Submit */}
         <TouchableOpacity
           style={styles.submitButton}
           onPress={() => navigation.navigate('RequestStatus')}
           activeOpacity={0.88}
         >
-          <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" />
+          <Ionicons name="paper-plane-outline" size={18} color={COLORS.white} />
           <Text style={styles.submitButtonText}>Post Request</Text>
         </TouchableOpacity>
       </Animated.ScrollView>
@@ -185,235 +163,87 @@ export default function PostRequest({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
-  },
-
-  // Header
+  root: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? 14 : 6,
-    paddingBottom: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 18, paddingTop: Platform.OS === 'android' ? 14 : 6, paddingBottom: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    letterSpacing: -0.3,
-  },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.3 },
+  scroll: { paddingHorizontal: 18, paddingBottom: 40 },
 
-  scroll: {
-    paddingHorizontal: 18,
-    paddingBottom: 40,
-  },
-
-  // ── Card wrapper
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 16,
+    marginBottom: 12, ...SHADOWS.card,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
+  label: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
 
-  // ── Blood type grid
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   gridItem: {
-    width: '22%',
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    width: '22%', paddingVertical: 12, alignItems: 'center',
+    backgroundColor: COLORS.inputBg, borderRadius: RADIUS.sm,
+    borderWidth: 1.5, borderColor: COLORS.inputBorder,
   },
-  gridItemActive: {
-    backgroundColor: '#D32F2F',
-    borderColor: '#D32F2F',
-  },
-  gridText: {
-    color: '#555555',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  gridTextActive: {
-    color: '#FFFFFF',
-  },
+  gridItemActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  gridText: { color: COLORS.textSecondary, fontSize: 15, fontWeight: '700' },
+  gridTextActive: { color: COLORS.white },
 
-  // ── Units row
-  row: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  row: { flexDirection: 'row', gap: 10 },
   rowItem: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    flex: 1, paddingVertical: 12, alignItems: 'center',
+    backgroundColor: COLORS.inputBg, borderRadius: RADIUS.sm,
+    borderWidth: 1.5, borderColor: COLORS.inputBorder,
   },
-  rowItemActive: {
-    backgroundColor: '#D32F2F',
-    borderColor: '#D32F2F',
-  },
+  rowItemActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
 
-  // ── Hospital selector
   selectInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: COLORS.inputBg, padding: 14, borderRadius: RADIUS.sm,
+    borderWidth: 1.5, borderColor: COLORS.inputBorder,
   },
-  selectText: {
-    color: '#1A1A1A',
-    fontSize: 15,
-    fontWeight: '500',
-  },
+  selectText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
   dropdown: {
-    backgroundColor: '#F5F5F7',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    marginTop: -4,
+    backgroundColor: COLORS.inputBg, borderWidth: 1.5, borderColor: COLORS.inputBorder,
+    borderTopWidth: 0, borderBottomLeftRadius: RADIUS.sm, borderBottomRightRadius: RADIUS.sm, marginTop: -4,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 14, borderBottomWidth: 1, borderBottomColor: COLORS.inputBorder,
   },
-  dropdownText: {
-    color: '#555555',
-    fontSize: 15,
-  },
-  dropdownTextActive: {
-    color: '#D32F2F',
-    fontWeight: '700',
-  },
+  dropdownText: { color: COLORS.textSecondary, fontSize: 15 },
+  dropdownTextActive: { color: COLORS.primary, fontWeight: '700' },
 
-  // ── Urgency radio
   radioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F5F5F7',
+    flexDirection: 'row', alignItems: 'center', marginBottom: 10,
+    paddingVertical: 12, paddingHorizontal: 14, borderRadius: RADIUS.sm,
+    borderWidth: 1.5, borderColor: COLORS.inputBorder, backgroundColor: COLORS.inputBg,
   },
   radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#CCCCCC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+    borderColor: COLORS.textMuted, alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  radioLabel: {
-    color: '#555555',
-    fontSize: 14,
-  },
+  radioInner: { width: 10, height: 10, borderRadius: 5 },
+  radioLabel: { color: COLORS.textSecondary, fontSize: 14 },
 
-  // ── Text input
   textInput: {
-    backgroundColor: '#F5F5F7',
-    color: '#1A1A1A',
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    fontSize: 14,
-    minHeight: 60,
-    textAlignVertical: 'top',
+    backgroundColor: COLORS.inputBg, color: COLORS.textPrimary, padding: 14,
+    borderRadius: RADIUS.sm, borderWidth: 1.5, borderColor: COLORS.inputBorder,
+    fontSize: 14, minHeight: 60, textAlignVertical: 'top',
   },
 
-  // ── Fee pill
   feePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderRadius: 50,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    marginBottom: 16,
-    flexWrap: 'wrap',
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.primarySurface, borderRadius: RADIUS.full,
+    paddingVertical: 12, paddingHorizontal: 18, justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.primaryMuted, marginBottom: 16, flexWrap: 'wrap',
   },
-  feeText: {
-    fontSize: 14,
-    color: '#555555',
-  },
-  feeBold: {
-    fontWeight: '800',
-    color: '#D32F2F',
-  },
-  feeSub: {
-    fontSize: 12,
-    color: '#AAAAAA',
-    width: '100%',
-    textAlign: 'center',
-    marginTop: 2,
-  },
+  feeText: { fontSize: 14, color: COLORS.textSecondary },
+  feeBold: { fontWeight: '800', color: COLORS.primary },
+  feeSub: { fontSize: 12, color: COLORS.textMuted, width: '100%', textAlign: 'center', marginTop: 2 },
 
-  // ── Submit
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#D32F2F',
-    paddingVertical: 16,
-    borderRadius: 14,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: RADIUS.md, ...SHADOWS.button,
   },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  submitButtonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
 });

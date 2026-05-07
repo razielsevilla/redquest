@@ -1,45 +1,28 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  StatusBar,
-  Animated,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  SafeAreaView, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
-// ─── Sample data ────────────────────────────────────────────────
 const RECENT_REQUESTS = [
-  {
-    id: '1',
-    bloodType: 'O+',
-    urgency: 'Urgent',
-    urgencyColor: '#F59E0B',
-    urgencyBg: '#FFFBEB',
-    date: 'May 4',
-    hospital: "St. Luke's BGC",
-    status: 'Donor matched',
-    statusColor: '#22C55E',
-    statusBg: '#F0FDF4',
-  },
+  { id: '1', type: 'O+', hospital: "St. Luke's BGC", status: 'Delivered', statusColor: COLORS.success, statusBg: COLORS.successLight, date: 'Apr 30' },
+  { id: '2', type: 'A+', hospital: 'Makati Med',     status: 'Pending',   statusColor: COLORS.warning, statusBg: COLORS.warningLight, date: 'Apr 28' },
 ];
 
-// ─── Component ──────────────────────────────────────────────────
 export default function RequesterHome({ navigation }) {
-  // Staggered entrance animations (4 sections)
+  const [hasNotification, setHasNotification] = useState(true);
+
   const cardAnims = useRef(
-    Array.from({ length: 4 }, () => ({
-      opacity:    new Animated.Value(0),
-      translateY: new Animated.Value(20),
+    Array.from({ length: 5 }, () => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(22),
     }))
   ).current;
 
   useEffect(() => {
-    Animated.stagger(
-      70,
+    Animated.stagger(80,
       cardAnims.map(({ opacity, translateY }) =>
         Animated.parallel([
           Animated.timing(opacity,    { toValue: 1, duration: 380, useNativeDriver: true }),
@@ -50,115 +33,100 @@ export default function RequesterHome({ navigation }) {
   }, []);
 
   const Stagger = ({ index, children, style }) => (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity:   cardAnims[index].opacity,
-          transform: [{ translateY: cardAnims[index].translateY }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
+    <Animated.View style={[style, {
+      opacity: cardAnims[index].opacity,
+      transform: [{ translateY: cardAnims[index].translateY }],
+    }]}>{children}</Animated.View>
   );
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── HEADER ── */}
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <Stagger index={0}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.appName}>RedQuest</Text>
-              <Text style={styles.appSub}>Family Portal</Text>
+              <Text style={styles.greeting}>Family Portal</Text>
+              <Text style={styles.subGreeting}>Manage blood requests</Text>
             </View>
-            <TouchableOpacity style={styles.bellWrap}>
-              <Ionicons name="notifications-outline" size={24} color="#D32F2F" />
+            <TouchableOpacity
+              style={styles.bellBtn}
+              onPress={() => setHasNotification(false)}
+            >
+              <Ionicons name="notifications-outline" size={22} color={COLORS.primary} />
+              {hasNotification && <View style={styles.bellDot} />}
             </TouchableOpacity>
           </View>
         </Stagger>
 
-        {/* ── STAT CHIPS ── */}
+        {/* Stats */}
         <Stagger index={1}>
           <View style={styles.statsRow}>
-            <View style={styles.statChip}>
-              <Ionicons name="pulse" size={18} color="#3B82F6" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>1</Text>
-              <Text style={styles.statChipLabel}>Active</Text>
+            <View style={styles.statCard}>
+              <Ionicons name="pulse" size={20} color={COLORS.info} />
+              <Text style={styles.statValue}>2</Text>
+              <Text style={styles.statLabel}>Active</Text>
             </View>
-            <View style={styles.statChip}>
-              <Ionicons name="time-outline" size={18} color="#F59E0B" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>0</Text>
-              <Text style={styles.statChipLabel}>Pending</Text>
+            <View style={styles.statCard}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.success} />
+              <Text style={styles.statValue}>5</Text>
+              <Text style={styles.statLabel}>Completed</Text>
             </View>
-            <View style={styles.statChip}>
-              <Ionicons name="checkmark-circle-outline" size={18} color="#22C55E" style={styles.statChipIcon} />
-              <Text style={styles.statChipValue}>3</Text>
-              <Text style={styles.statChipLabel}>Fulfilled</Text>
+            <View style={styles.statCard}>
+              <Ionicons name="time-outline" size={20} color={COLORS.warning} />
+              <Text style={styles.statValue}>1</Text>
+              <Text style={styles.statLabel}>Pending</Text>
             </View>
           </View>
         </Stagger>
 
-        {/* ── POST REQUEST CTA ── */}
+        {/* Post New Request */}
         <Stagger index={2}>
           <TouchableOpacity
             style={styles.createBtn}
             activeOpacity={0.88}
             onPress={() => navigation.navigate('PostRequest')}
           >
-            <Ionicons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.createBtnText}>Post a Blood Request</Text>
+            <Ionicons name="add-circle-outline" size={20} color={COLORS.white} />
+            <Text style={styles.createBtnText}>Post New Blood Request</Text>
           </TouchableOpacity>
         </Stagger>
 
-        {/* ── RECENT REQUESTS ── */}
+        {/* Recent Requests */}
         <Stagger index={3}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Recent Requests</Text>
-
-            {RECENT_REQUESTS.map((req) => (
-              <TouchableOpacity
-                key={req.id}
-                style={styles.requestCard}
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('RequestStatus')}
-              >
-                <View style={styles.cardTop}>
-                  {/* Left info */}
-                  <View style={styles.cardLeft}>
-                    <View style={styles.cardRow}>
-                      <View style={styles.bloodBadge}>
-                        <Text style={styles.bloodBadgeText}>{req.bloodType}</Text>
-                      </View>
-                      <View style={[styles.urgencyBadge, { backgroundColor: req.urgencyBg }]}>
-                        <Text style={[styles.urgencyBadgeText, { color: req.urgencyColor }]}>
-                          {req.urgency}
-                        </Text>
-                      </View>
-                      <Text style={styles.dateText}>{req.date}</Text>
-                    </View>
-                    <Text style={styles.hospitalText}>{req.hospital}</Text>
+            <Text style={styles.sectionTitle}>Recent Requests</Text>
+            {RECENT_REQUESTS.map((req, i) => (
+              <View key={req.id} style={[styles.requestCard, i < RECENT_REQUESTS.length - 1 && styles.requestCardBorder]}>
+                <View style={styles.requestLeft}>
+                  <View style={styles.bloodPill}>
+                    <Ionicons name="water" size={14} color={COLORS.primary} />
+                    <Text style={styles.bloodPillText}>{req.type}</Text>
                   </View>
-
-                  {/* Right arrow */}
-                  <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.requestHospital}>{req.hospital}</Text>
+                    <View style={styles.requestMeta}>
+                      <Ionicons name="calendar-outline" size={12} color={COLORS.textMuted} />
+                      <Text style={styles.requestDate}>{req.date}</Text>
+                    </View>
+                  </View>
                 </View>
-
-                {/* Status row */}
                 <View style={[styles.statusBadge, { backgroundColor: req.statusBg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: req.statusColor }]} />
-                  <Text style={[styles.statusText, { color: req.statusColor }]}>
-                    {req.status}
-                  </Text>
+                  <Text style={[styles.statusBadgeText, { color: req.statusColor }]}>{req.status}</Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))}
+          </View>
+        </Stagger>
+
+        {/* Info tip */}
+        <Stagger index={4}>
+          <View style={styles.tipCard}>
+            <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.tipText}>
+              Post a request and nearby verified donors will be notified. A rider will handle the transport.
+            </Text>
           </View>
         </Stagger>
       </ScrollView>
@@ -166,186 +134,64 @@ export default function RequesterHome({ navigation }) {
   );
 }
 
-// ─── Styles ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
-  },
-  scroll: {
-    padding: 18,
-    paddingBottom: 40,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { padding: 18, paddingBottom: 40 },
 
-  // ── Header
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    marginTop: 4,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: 16, marginTop: 4,
   },
-  appName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#D32F2F',
-    letterSpacing: -0.3,
+  greeting: { fontSize: 22, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.3 },
+  subGreeting: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  bellBtn: {
+    position: 'relative', width: 40, height: 40, borderRadius: 20,
+    backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center', ...SHADOWS.small,
   },
-  appSub: {
-    fontSize: 13,
-    color: '#888888',
-    marginTop: 2,
-  },
-  bellWrap: {
-    position: 'relative',
-    padding: 4,
+  bellDot: {
+    position: 'absolute', top: 8, right: 8, width: 8, height: 8,
+    borderRadius: 4, backgroundColor: COLORS.primary,
   },
 
-  // ── Stat chips
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  statCard: {
+    flex: 1, backgroundColor: COLORS.surface, borderRadius: RADIUS.md,
+    paddingVertical: 14, alignItems: 'center', ...SHADOWS.card,
   },
-  statChip: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  statChipIcon: {
-    marginBottom: 4,
-  },
-  statChipValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    letterSpacing: -0.5,
-  },
-  statChipLabel: {
-    fontSize: 11,
-    color: '#888888',
-    marginTop: 2,
-  },
+  statValue: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.5, marginTop: 4 },
+  statLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
 
-  // ── Create Request button
   createBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#D32F2F',
-    borderRadius: 14,
-    paddingVertical: 16,
-    marginBottom: 18,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: 16,
+    marginBottom: 18, ...SHADOWS.button,
   },
-  createBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    letterSpacing: 0.2,
-  },
+  createBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
 
-  // ── Section wrapper (white card)
   section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 16,
+    marginBottom: 14, ...SHADOWS.card,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 },
 
-  // ── Request card
-  requestCard: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+  requestCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
+  requestCardBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  requestLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  bloodPill: {
+    width: 40, height: 40, borderRadius: 10, backgroundColor: COLORS.primarySurface,
+    alignItems: 'center', justifyContent: 'center', gap: 1,
   },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  cardLeft: {
-    flex: 1,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  bloodBadge: {
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  bloodBadgeText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#D32F2F',
-  },
-  urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  urgencyBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#AAAAAA',
-  },
-  hospitalText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
+  bloodPillText: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
+  requestHospital: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
+  requestMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  requestDate: { fontSize: 12, color: COLORS.textMuted },
+  statusBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20 },
+  statusBadgeText: { fontSize: 12, fontWeight: '700' },
 
-  // ── Status badge
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
+  tipCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: COLORS.primarySurface, borderRadius: RADIUS.md, padding: 14,
+    borderWidth: 1, borderColor: COLORS.primaryMuted,
   },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  tipText: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 19, flex: 1 },
 });

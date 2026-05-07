@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Line, Circle, Rect, Path, Polyline } from 'react-native-svg';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 // ─── Progress Step config ──────────────────────────────────────
 const STEPS = [
@@ -144,7 +145,7 @@ export default function HospitalRequestTracking({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -331,7 +332,7 @@ const map = StyleSheet.create({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
   },
 
   // Header

@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 // ─── Mock history data ───────────────────────────────────────────
 const HISTORY = [
@@ -54,7 +55,7 @@ export default function HospitalHistory() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -143,7 +144,7 @@ export default function HospitalHistory() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
   },
 
   header: {

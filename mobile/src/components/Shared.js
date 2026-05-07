@@ -1,33 +1,58 @@
 import React from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
-export const BloodTypeBadge = ({ type }) => (
-  <View style={styles.bloodTypeBadge}>
-    <Text style={styles.bloodTypeText}>{type}</Text>
-  </View>
-);
+export const BloodTypeBadge = ({ type, size = 'md' }) => {
+  const isSmall = size === 'sm';
+  return (
+    <View style={[
+      styles.bloodTypeBadge,
+      isSmall && { paddingHorizontal: 8, paddingVertical: 3 },
+    ]}>
+      <Text style={[
+        styles.bloodTypeText,
+        isSmall && { fontSize: 12 },
+      ]}>
+        {type}
+      </Text>
+    </View>
+  );
+};
 
 export const UrgencyBadge = ({ level }) => {
-  let bgColor = '#4B5563'; // standard gray
-  if (level === 'urgent') bgColor = '#F59E0B'; // amber
-  if (level === 'critical') bgColor = '#EF4444'; // red
+  let bgColor = '#6B7280';
+  let surfaceColor = '#F3F4F6';
+  if (level === 'urgent') {
+    bgColor = COLORS.warning;
+    surfaceColor = COLORS.warningLight;
+  }
+  if (level === 'critical') {
+    bgColor = COLORS.primary;
+    surfaceColor = COLORS.primarySurface;
+  }
 
   return (
-    <View style={[styles.urgencyBadge, { backgroundColor: bgColor }]}>
-      <Text style={styles.urgencyText}>{level.toUpperCase()}</Text>
+    <View style={[styles.urgencyBadge, { backgroundColor: surfaceColor }]}>
+      <Text style={[styles.urgencyText, { color: bgColor }]}>
+        {level.toUpperCase()}
+      </Text>
     </View>
   );
 };
 
 export const XPBar = ({ currentXP, targetXP, level }) => {
-  const progress = (currentXP / targetXP) * 100;
+  const progress = Math.min((currentXP / targetXP) * 100, 100);
   return (
     <View style={styles.xpContainer}>
-      <Text style={styles.xpText}>Level {level} Hero</Text>
+      <View style={styles.xpHeader}>
+        <Text style={styles.xpText}>Level {level}</Text>
+        <Text style={styles.xpLabel}>
+          {currentXP.toLocaleString()} / {targetXP.toLocaleString()} XP
+        </Text>
+      </View>
       <View style={styles.xpBarBackground}>
         <View style={[styles.xpBarFill, { width: `${progress}%` }]} />
       </View>
-      <Text style={styles.xpLabel}>{currentXP.toLocaleString()} / {targetXP.toLocaleString()}</Text>
     </View>
   );
 };
@@ -39,15 +64,17 @@ export const QuestCard = ({ bloodType, urgency, hospitalName, distanceMeters, ex
       <UrgencyBadge level={urgency} />
     </View>
     <Text style={styles.questTitle}>{hospitalName}</Text>
-    <Text style={styles.questSubtitle}>{distanceMeters / 1000} km away</Text>
+    <Text style={styles.questSubtitle}>{(distanceMeters / 1000).toFixed(1)} km away</Text>
     {expiresAt && <Text style={styles.questExpiry}>Expires in 4:32</Text>}
   </View>
 );
 
-export const RiderCard = ({ name, plate, etaMinutes, status }) => (
+export const RiderCard = ({ name, plate, etaMinutes }) => (
   <View style={styles.riderCard}>
     <View style={styles.riderInfo}>
-      <Text style={styles.riderIcon}>🏍️</Text>
+      <View style={styles.riderIconWrap}>
+        <Text style={styles.riderIconText}>R</Text>
+      </View>
       <View>
         <Text style={styles.riderName}>{name}</Text>
         <Text style={styles.riderPlate}>{plate}</Text>
@@ -64,10 +91,21 @@ export const StatusTimeline = ({ steps, currentStep }) => (
   <View style={styles.timelineContainer}>
     {steps.map((step, index) => (
       <View key={index} style={styles.timelineStep}>
-        <View style={[styles.timelineDot, index <= currentStep && styles.timelineDotActive]} />
-        <Text style={[styles.timelineLabel, index <= currentStep && styles.timelineLabelActive]}>{step}</Text>
+        <View style={[
+          styles.timelineDot,
+          index <= currentStep && styles.timelineDotActive,
+        ]} />
+        <Text style={[
+          styles.timelineLabel,
+          index <= currentStep && styles.timelineLabelActive,
+        ]}>
+          {step}
+        </Text>
         {index < steps.length - 1 && (
-          <View style={[styles.timelineLine, index < currentStep && styles.timelineLineActive]} />
+          <View style={[
+            styles.timelineLine,
+            index < currentStep && styles.timelineLineActive,
+          ]} />
         )}
       </View>
     ))}
@@ -76,59 +114,192 @@ export const StatusTimeline = ({ steps, currentStep }) => (
 
 const styles = StyleSheet.create({
   bloodTypeBadge: {
-    backgroundColor: '#E24B4A',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
     alignSelf: 'flex-start',
   },
-  bloodTypeText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  bloodTypeText: {
+    color: COLORS.white,
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.3,
+  },
   urgencyBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: RADIUS.full,
     alignSelf: 'flex-start',
   },
-  urgencyText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  xpContainer: { marginVertical: 12 },
-  xpText: { color: '#F9FAFB', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  xpBarBackground: { backgroundColor: '#374151', height: 12, borderRadius: 6, overflow: 'hidden' },
-  xpBarFill: { backgroundColor: '#E24B4A', height: '100%', borderRadius: 6 },
-  xpLabel: { color: '#9CA3AF', fontSize: 12, marginTop: 4, textAlign: 'right' },
-  questCard: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+  urgencyText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  questHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  questTitle: { color: '#F9FAFB', fontSize: 16, fontWeight: '600' },
-  questSubtitle: { color: '#9CA3AF', fontSize: 14, marginTop: 4 },
-  questExpiry: { color: '#E24B4A', fontSize: 14, fontWeight: 'bold', marginTop: 8 },
-  riderCard: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
+
+  // XP Bar
+  xpContainer: {
+    marginVertical: 8,
+  },
+  xpHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginVertical: 16,
-    borderWidth: 1,
-    borderColor: '#374151'
+    marginBottom: 8,
   },
-  riderInfo: { flexDirection: 'row', alignItems: 'center' },
-  riderIcon: { fontSize: 24, marginRight: 12 },
-  riderName: { color: '#F9FAFB', fontSize: 16, fontWeight: 'bold' },
-  riderPlate: { color: '#9CA3AF', fontSize: 14 },
-  riderEta: { alignItems: 'flex-end' },
-  etaLabel: { color: '#9CA3AF', fontSize: 12 },
-  etaValue: { color: '#F9FAFB', fontSize: 16, fontWeight: 'bold' },
-  timelineContainer: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 20 },
-  timelineStep: { alignItems: 'center', flex: 1, position: 'relative' },
-  timelineDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#374151', zIndex: 1 },
-  timelineDotActive: { backgroundColor: '#E24B4A' },
-  timelineLine: { position: 'absolute', top: 5, left: '50%', right: '-50%', height: 2, backgroundColor: '#374151', zIndex: 0 },
-  timelineLineActive: { backgroundColor: '#E24B4A' },
-  timelineLabel: { color: '#9CA3AF', fontSize: 10, marginTop: 8, textAlign: 'center' },
-  timelineLabelActive: { color: '#F9FAFB', fontWeight: 'bold' },
+  xpText: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  xpLabel: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  xpBarBackground: {
+    backgroundColor: COLORS.border,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  xpBarFill: {
+    backgroundColor: COLORS.primary,
+    height: '100%',
+    borderRadius: 4,
+  },
+
+  // Quest card
+  questCard: {
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: RADIUS.md,
+    marginBottom: 12,
+    ...SHADOWS.card,
+  },
+  questHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  questTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  questSubtitle: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  questExpiry: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+
+  // Rider card
+  riderCard: {
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: RADIUS.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.card,
+  },
+  riderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  riderIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  riderIconText: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  riderName: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  riderPlate: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  riderEta: {
+    alignItems: 'flex-end',
+  },
+  etaLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  etaValue: {
+    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+
+  // Status timeline
+  timelineContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 16,
+  },
+  timelineStep: {
+    alignItems: 'center',
+    flex: 1,
+    position: 'relative',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.border,
+    zIndex: 1,
+  },
+  timelineDotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  timelineLine: {
+    position: 'absolute',
+    top: 5,
+    left: '50%',
+    right: '-50%',
+    height: 2,
+    backgroundColor: COLORS.border,
+    zIndex: 0,
+  },
+  timelineLineActive: {
+    backgroundColor: COLORS.primary,
+  },
+  timelineLabel: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  timelineLabelActive: {
+    color: COLORS.textPrimary,
+    fontWeight: '700',
+  },
 });

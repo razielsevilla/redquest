@@ -10,7 +10,9 @@ import {
   Animated,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { XPBar } from '../components/Shared';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 export default function DonorHome({ navigation }) {
   const [isAvailable, setIsAvailable]               = useState(true);
@@ -21,13 +23,12 @@ export default function DonorHome({ navigation }) {
   // Staggered card animations (8 sections)
   const cardAnims = useRef(
     Array.from({ length: 8 }, () => ({
-      opacity:   new Animated.Value(0),
+      opacity:    new Animated.Value(0),
       translateY: new Animated.Value(24),
     }))
   ).current;
 
   useEffect(() => {
-    // Stagger each card in with 80ms delay
     Animated.stagger(
       80,
       cardAnims.map(({ opacity, translateY }) =>
@@ -49,7 +50,6 @@ export default function DonorHome({ navigation }) {
     }
   }, [isLevelUpAvailable]);
 
-  // Helper to wrap a section in its stagger animation
   const Stagger = ({ index, children, style }) => (
     <Animated.View
       style={[
@@ -66,11 +66,12 @@ export default function DonorHome({ navigation }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Level-up banner */}
       <Animated.View style={[styles.levelUpBanner, { transform: [{ translateY: bannerAnim }] }]}>
-        <Text style={styles.levelUpText}>🎉 Level up available! Tap to claim.</Text>
+        <Ionicons name="arrow-up-circle" size={18} color={COLORS.white} />
+        <Text style={styles.levelUpText}>Level up available! Tap to claim.</Text>
       </Animated.View>
 
       <ScrollView
@@ -81,11 +82,11 @@ export default function DonorHome({ navigation }) {
         <Stagger index={0}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.greeting}>Hi, Juan 👋</Text>
+              <Text style={styles.greeting}>Hi, Juan</Text>
               <Text style={styles.subGreeting}>Ready to save a life?</Text>
             </View>
             <TouchableOpacity style={styles.bellBtn}>
-              <Text style={styles.bellIcon}>🔔</Text>
+              <Ionicons name="notifications-outline" size={22} color={COLORS.primary} />
               <View style={styles.bellDot} />
             </TouchableOpacity>
           </View>
@@ -100,7 +101,7 @@ export default function DonorHome({ navigation }) {
             <View style={{ flex: 1 }}>
               <View style={styles.verifiedRow}>
                 <Text style={styles.verifiedTitle}>Verified Donor</Text>
-                <Text style={styles.verifiedCheck}>✓</Text>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
               </View>
               <Text style={styles.verifiedSub}>Your profile is verified and active</Text>
             </View>
@@ -111,8 +112,14 @@ export default function DonorHome({ navigation }) {
         <Stagger index={2}>
           <View style={[styles.card, styles.availCard]}>
             <View style={styles.availLeft}>
-              <Text style={styles.calIcon}>📅</Text>
-              <View>
+              <View style={styles.availIconWrap}>
+                <Ionicons
+                  name={isAvailable ? 'calendar' : 'calendar-outline'}
+                  size={20}
+                  color={isAvailable ? COLORS.success : COLORS.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.availTitle}>
                   {isAvailable ? 'Eligible to Donate' : 'Currently Unavailable'}
                 </Text>
@@ -130,10 +137,9 @@ export default function DonorHome({ navigation }) {
               <Switch
                 value={isAvailable}
                 onValueChange={setIsAvailable}
-                trackColor={{ false: '#E0E0E0', true: '#D32F2F' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: '#E0E0E0', true: COLORS.primary }}
+                thumbColor={COLORS.white}
               />
-              <Text style={styles.checkCircle}>✓</Text>
             </View>
           </View>
         </Stagger>
@@ -142,6 +148,7 @@ export default function DonorHome({ navigation }) {
         <Stagger index={3}>
           <View style={styles.card}>
             <View style={styles.bloodLevelRow}>
+              <Ionicons name="water" size={18} color={COLORS.primary} />
               <Text style={styles.bloodTypeLabel}>
                 Blood type: <Text style={styles.bloodTypeValue}>O+</Text>
               </Text>
@@ -155,12 +162,16 @@ export default function DonorHome({ navigation }) {
         <Stagger index={4}>
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { marginRight: 8 }]}>
-              <Text style={styles.statIcon}>🩺</Text>
+              <View style={styles.statIconWrap}>
+                <Ionicons name="heart" size={22} color={COLORS.primary} />
+              </View>
               <Text style={styles.statValue}>7</Text>
               <Text style={styles.statLabel}>Total Donations</Text>
             </View>
             <View style={[styles.statCard, { marginLeft: 8 }]}>
-              <Text style={styles.statIcon}>🧡</Text>
+              <View style={styles.statIconWrap}>
+                <Ionicons name="time" size={22} color={COLORS.warning} />
+              </View>
               <Text style={styles.statValue}>56 days</Text>
               <Text style={styles.statLabel}>Until Next</Text>
             </View>
@@ -172,22 +183,22 @@ export default function DonorHome({ navigation }) {
           <TouchableOpacity style={[styles.card, styles.rewardsCard]} activeOpacity={0.85}>
             <View style={styles.rewardsLeft}>
               <View style={styles.rewardsIconWrap}>
-                <Text style={styles.rewardsIcon}>🏆</Text>
+                <Ionicons name="trophy" size={22} color={COLORS.white} />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.rewardsTitle}>Rewards & Points</Text>
                 <Text style={styles.rewardsSub}>2,350 VitaPoints earned</Text>
                 <View style={styles.rewardsBadgeRow}>
                   <View style={[styles.badge, styles.badgeGreen]}>
-                    <Text style={styles.badgeText}>4 Badges Unlocked</Text>
+                    <Text style={styles.badgeTextGreen}>4 Badges</Text>
                   </View>
                   <View style={[styles.badge, styles.badgeRed]}>
-                    <Text style={styles.badgeText}>3 Rewards Available</Text>
+                    <Text style={styles.badgeTextRed}>3 Rewards</Text>
                   </View>
                 </View>
               </View>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
         </Stagger>
 
@@ -199,7 +210,9 @@ export default function DonorHome({ navigation }) {
             { date: 'Apr 12', type: 'O+', hospital: 'PGH' },
           ].map((q, i) => (
             <View key={i} style={styles.questRow}>
-              <Text style={styles.questDot}>•</Text>
+              <View style={styles.questDot}>
+                <Ionicons name="water" size={14} color={COLORS.primary} />
+              </View>
               <Text style={styles.questText}>
                 {q.date}  <Text style={styles.questType}>{q.type}</Text>  {q.hospital}
               </Text>
@@ -207,14 +220,15 @@ export default function DonorHome({ navigation }) {
           ))}
           <TouchableOpacity style={styles.viewHistoryBtn}>
             <Text style={styles.viewHistoryText}>View full history</Text>
+            <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
         {/* ── URGENT REQUESTS card ── */}
         <View style={styles.urgentCard}>
           <View style={styles.urgentLeft}>
-            <Text style={styles.urgentIcon}>📍</Text>
-            <View>
+            <Ionicons name="location" size={22} color={COLORS.white} />
+            <View style={{ flex: 1 }}>
               <View style={styles.urgentTitleRow}>
                 <Text style={styles.urgentTitle}>Urgent Requests</Text>
                 <View style={styles.urgentBadge}>
@@ -239,6 +253,7 @@ export default function DonorHome({ navigation }) {
           onPress={() => navigation.navigate('QuestAlert')}
           activeOpacity={0.85}
         >
+          <Ionicons name="flash-outline" size={18} color={COLORS.textPrimary} />
           <Text style={styles.demoBtnText}>Demo: Trigger Quest Alert</Text>
         </TouchableOpacity>
 
@@ -251,22 +266,25 @@ export default function DonorHome({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: COLORS.background,
   },
 
   // Level-up banner
   levelUpBanner: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.success,
     paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
     zIndex: 20,
   },
   levelUpText: {
-    color: '#FFF',
+    color: COLORS.white,
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: 14,
   },
 
   scroll: {
@@ -285,59 +303,60 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     letterSpacing: -0.5,
   },
   subGreeting: {
     fontSize: 14,
-    color: '#888888',
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   bellBtn: {
     position: 'relative',
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.small,
   },
-  bellIcon: { fontSize: 22 },
   bellDot: {
     position: 'absolute',
-    top: 4, right: 4,
+    top: 8, right: 8,
     width: 8, height: 8,
     borderRadius: 4,
-    backgroundColor: '#D32F2F',
+    backgroundColor: COLORS.primary,
   },
 
   // Shared card base
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...SHADOWS.card,
   },
 
   // Verified donor card
   verifiedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0FFF4',
+    backgroundColor: COLORS.successLight,
     borderWidth: 1,
-    borderColor: '#C8F0D4',
+    borderColor: '#C8E6C9',
     gap: 12,
   },
   verifiedIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   verifiedIconText: {
-    color: '#FFF',
+    color: COLORS.white,
     fontWeight: '800',
     fontSize: 18,
   },
@@ -349,16 +368,11 @@ const styles = StyleSheet.create({
   verifiedTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  verifiedCheck: {
-    color: '#4CAF50',
-    fontWeight: '800',
-    fontSize: 16,
+    color: COLORS.textPrimary,
   },
   verifiedSub: {
     fontSize: 12,
-    color: '#666666',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
 
@@ -372,57 +386,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     flex: 1,
-    gap: 10,
+    gap: 12,
   },
-  calIcon: { fontSize: 20, marginTop: 2 },
+  availIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
   availTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
   },
   availStatus: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#D32F2F',
+    color: COLORS.primary,
     marginTop: 2,
   },
   availStatusGreen: {
-    color: '#4CAF50',
+    color: COLORS.success,
   },
   availSub: {
     fontSize: 12,
-    color: '#888888',
+    color: COLORS.textMuted,
     marginTop: 3,
   },
   availRight: {
     alignItems: 'center',
-    gap: 4,
-  },
-  checkCircle: {
-    color: '#4CAF50',
-    fontWeight: '800',
-    fontSize: 16,
+    paddingLeft: 8,
   },
 
   // Blood type + level card
   bloodLevelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 8,
   },
   bloodTypeLabel: {
     fontSize: 14,
-    color: '#555555',
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   bloodTypeValue: {
-    color: '#D32F2F',
+    color: COLORS.primary,
     fontWeight: '800',
     fontSize: 16,
   },
   levelLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 6,
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
 
   // Stats
@@ -432,26 +452,30 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...SHADOWS.card,
   },
-  statIcon: { fontSize: 22, marginBottom: 6 },
+  statIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
   statValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 12,
-    color: '#888888',
+    color: COLORS.textMuted,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -460,7 +484,7 @@ const styles = StyleSheet.create({
   rewardsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
+    backgroundColor: COLORS.warningLight,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
@@ -474,19 +498,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#F59E0B',
+    backgroundColor: COLORS.warning,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rewardsIcon: { fontSize: 22 },
   rewardsTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
   },
   rewardsSub: {
     fontSize: 12,
-    color: '#666666',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   rewardsBadgeRow: {
@@ -498,26 +521,26 @@ const styles = StyleSheet.create({
   badge: {
     paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: 50,
+    borderRadius: RADIUS.full,
   },
-  badgeGreen: { backgroundColor: '#D1FAE5' },
-  badgeRed:   { backgroundColor: '#FEE2E2' },
-  badgeText: {
+  badgeGreen: { backgroundColor: '#C8E6C9' },
+  badgeRed:   { backgroundColor: COLORS.primaryMuted },
+  badgeTextGreen: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: COLORS.success,
   },
-  chevron: {
-    fontSize: 22,
-    color: '#AAAAAA',
-    marginLeft: 8,
+  badgeTextRed: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 
   // Recent quests
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     marginBottom: 12,
   },
   questRow: {
@@ -525,26 +548,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    gap: 8,
+    borderBottomColor: COLORS.border,
+    gap: 10,
   },
-  questDot: { color: '#D32F2F', fontSize: 16 },
-  questText: { fontSize: 14, color: '#555555' },
-  questType: { color: '#D32F2F', fontWeight: '700' },
+  questDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  questText: { fontSize: 14, color: COLORS.textSecondary },
+  questType: { color: COLORS.primary, fontWeight: '700' },
   viewHistoryBtn: {
     marginTop: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
   },
   viewHistoryText: {
-    color: '#D32F2F',
+    color: COLORS.primary,
     fontWeight: '600',
     fontSize: 14,
   },
 
   // Urgent requests card
   urgentCard: {
-    backgroundColor: '#D32F2F',
-    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
     padding: 16,
     marginBottom: 12,
   },
@@ -554,7 +587,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  urgentIcon: { fontSize: 22 },
   urgentTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -563,16 +595,16 @@ const styles = StyleSheet.create({
   urgentTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   urgentBadge: {
     backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 50,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   urgentBadgeText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -587,28 +619,31 @@ const styles = StyleSheet.create({
   },
   urgentTypeChip: {
     backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 50,
+    borderRadius: RADIUS.full,
     paddingVertical: 4,
     paddingHorizontal: 12,
   },
   urgentTypeText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 12,
     fontWeight: '700',
   },
 
   // Demo button
   demoBtn: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 8,
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: COLORS.inputBorder,
   },
   demoBtnText: {
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     fontWeight: '700',
     fontSize: 14,
   },

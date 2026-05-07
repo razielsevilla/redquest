@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 // ─── Constants ──────────────────────────────────────────────────
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
@@ -46,12 +47,12 @@ export default function CreateBloodRequest({ navigation }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* ── HEADER ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <View>
           <Text style={styles.headerTitle}>Create Blood Request</Text>
@@ -93,7 +94,7 @@ export default function CreateBloodRequest({ navigation }) {
             keyboardType="number-pad"
             maxLength={2}
             placeholder="e.g. 2"
-            placeholderTextColor="#BDBDBD"
+            placeholderTextColor={COLORS.textPlaceholder}
           />
         </View>
 
@@ -159,7 +160,7 @@ export default function CreateBloodRequest({ navigation }) {
                     {opt}
                   </Text>
                   {timeNeeded === opt && (
-                    <Ionicons name="checkmark" size={16} color="#D32F2F" />
+                    <Ionicons name="checkmark" size={16} color={COLORS.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -184,7 +185,7 @@ export default function CreateBloodRequest({ navigation }) {
 
         {/* ── SUMMARY PILL ── */}
         <View style={styles.summaryPill}>
-          <Ionicons name="information-circle-outline" size={16} color="#D32F2F" />
+          <Ionicons name="information-circle-outline" size={16} color={COLORS.primary} />
           <Text style={styles.summaryText}>
             Request: <Text style={styles.summaryAccent}>{bloodType}</Text>
             {' · '}{units} unit{units !== '1' ? 's' : ''}
@@ -210,7 +211,7 @@ export default function CreateBloodRequest({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
   },
 
   // Header
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: Platform.OS === 'android' ? 14 : 6,
     paddingBottom: 12,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
   },
   backBtn: {
     padding: 4,
@@ -229,12 +230,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     letterSpacing: -0.3,
   },
   headerSub: {
     fontSize: 12,
-    color: '#888888',
+    color: COLORS.textMuted,
     marginTop: 1,
   },
 
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#444444',
+    color: COLORS.textSecondary,
     marginBottom: 10,
     letterSpacing: 0.1,
   },
@@ -277,8 +278,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   bloodCellActive: {
-    borderColor: '#D32F2F',
-    backgroundColor: '#FFF5F5',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primarySurface,
   },
   bloodCellText: {
     fontSize: 14,
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     color: '#555555',
   },
   bloodCellTextActive: {
-    color: '#D32F2F',
+    color: COLORS.primary,
   },
 
   // Input
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioOuterActive: {
-    borderColor: '#D32F2F',
+    borderColor: COLORS.primary,
   },
   radioInner: {
     width: 10,
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     color: '#555555',
   },
   dropdownTextActive: {
-    color: '#D32F2F',
+    color: COLORS.primary,
     fontWeight: '700',
   },
 
@@ -445,15 +446,11 @@ const styles = StyleSheet.create({
 
   // Submit button
   submitBtn: {
-    backgroundColor: '#D32F2F',
-    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
     paddingVertical: 17,
     alignItems: 'center',
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    ...SHADOWS.button,
   },
   submitBtnText: {
     color: '#FFFFFF',

@@ -10,62 +10,19 @@ import {
   Platform,
   Animated,
   StatusBar,
-  Dimensions,
+  Image,
+  Keyboard,
 } from 'react-native';
-import Svg, {
-  Path,
-  Defs,
-  LinearGradient,
-  Stop,
-} from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import * as storage from '../lib/storage';
 import { loginUser } from '../lib/api';
-
-const { height } = Dimensions.get('window');
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 const AUTH_TOKEN_KEY = 'redquest.authToken';
 const AUTH_EMAIL_KEY = 'redquest.authEmail';
 const AUTH_ROLE_KEY = 'redquest.authRole';
 const AUTH_USER_KEY = 'redquest.authUser';
 
-// ─────────────────────────────────────────────────────────────
-// White blood drop (used on red background)
-// ─────────────────────────────────────────────────────────────
-function WhiteDropLogo() {
-  return (
-    <Svg width={90} height={120} viewBox="0 0 90 120">
-      <Defs>
-        <LinearGradient id="wdrop" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-          <Stop offset="100%" stopColor="rgba(255,255,255,0.85)" stopOpacity="1" />
-        </LinearGradient>
-      </Defs>
-      {/* Teardrop body */}
-      <Path
-        d="M45 4 C33 20 14 38 10 58 C6 80 23 108 45 108 C67 108 84 80 80 58 C76 38 57 20 45 4 Z"
-        fill="url(#wdrop)"
-      />
-      {/* Inner shine */}
-      <Path
-        d="M26 38 C22 52 21 66 25 78"
-        stroke="rgba(220,50,50,0.25)"
-        strokeWidth="5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Small heart / pulse inside drop */}
-      <Path
-        d="M37 65 C37 60 42 57 45 62 C48 57 53 60 53 65 C53 70 45 76 45 76 C45 76 37 70 37 65 Z"
-        fill="#C62828"
-        opacity="0.6"
-      />
-    </Svg>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// MAIN SCREEN  – two states: splash buttons vs login form
-// ─────────────────────────────────────────────────────────────
 export default function Login({ navigation, route }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -75,23 +32,28 @@ export default function Login({ navigation, route }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const [storedEmail, setStoredEmail] = useState('');
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const formAnim = useRef(new Animated.Value(30)).current;
   const formOpacity = useRef(new Animated.Value(0)).current;
+  const topFlex = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
 
+    // Responsive keyboard behavior: shrink the top red section when keyboard opens
+    const kShow = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
+      Animated.timing(topFlex, { toValue: 0.01, duration: 250, useNativeDriver: false }).start();
+    });
+    const kHide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      Animated.timing(topFlex, { toValue: 1, duration: 250, useNativeDriver: false }).start();
+    });
+
     if (route?.params?.email) setEmail(route.params.email);
     if (route?.params?.message) setStatusMessage(route.params.message);
 
-    (async () => {
-      const saved = await storage.getItem(AUTH_EMAIL_KEY);
-      if (saved) setStoredEmail(saved);
-    })();
+    return () => { kShow.remove(); kHide.remove(); };
   }, []);
 
   const openForm = () => {
@@ -131,11 +93,9 @@ export default function Login({ navigation, route }) {
       await storage.setItem(AUTH_EMAIL_KEY, email.trim().toLowerCase());
       await storage.setItem(AUTH_ROLE_KEY, user.role || '');
       await storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-      setStoredEmail(email.trim().toLowerCase());
       const dest =
         user.role === 'donor' ? 'Donor' :
-          user.role === 'hospital_staff' ? 'Hospital' :
-            'Requester';
+          user.role === 'hospital_staff' ? 'Hospital' : 'Requester';
       navigation?.navigate(dest);
     } catch (err) {
       setStatusMessage(err.message || 'Could not sign in. Try again.');
@@ -146,61 +106,48 @@ export default function Login({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#D32F2F" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
 
-      {/* ── RED TOP SECTION ── */}
-      <Animated.View style={[styles.redSection, { opacity: fadeAnim }]}>
-        {/* Decorative circle top-left */}
-        <View style={styles.decorCircleLarge} />
-        <View style={styles.decorCircleSmall} />
+        {/* ── RESPONSIVE RED TOP SECTION ── */}
+        <Animated.View style={[styles.redSection, { flex: topFlex, opacity: topFlex }]}>
+          <View style={styles.decorCircleLarge} />
+          <View style={styles.decorCircleSmall} />
+          <View style={styles.decorCircleRight} />
 
-        <View style={styles.logoArea}>
-          <WhiteDropLogo />
-        </View>
-      </Animated.View>
+          <Animated.View style={[styles.logoArea, { opacity: fadeAnim }]}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.logoTitle}>
+              Red<Text style={{ fontWeight: '800', color: COLORS.primary }}>Quest</Text>
+            </Text>
+          </Animated.View>
+        </Animated.View>
 
-      {/* ── WHITE BOTTOM PANEL ── */}
-      <View style={styles.whitePanel}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-        >
+        {/* ── WHITE BOTTOM PANEL ── */}
+        <View style={styles.whitePanel}>
           {!showForm ? (
-            /* ── SPLASH BUTTONS ── */
             <View style={styles.splashContent}>
-              {/* Sign In button */}
-              <TouchableOpacity
-                style={styles.signInBtn}
-                activeOpacity={0.85}
-                onPress={openForm}
-              >
-                <Text style={styles.signInBtnText}>Sign in</Text>
+              <TouchableOpacity style={styles.signInBtn} activeOpacity={0.85} onPress={openForm}>
+                <Ionicons name="log-in-outline" size={20} color={COLORS.white} />
+                <Text style={styles.signInBtnText}>Sign In</Text>
               </TouchableOpacity>
 
-              {/* Create Account */}
-              <TouchableOpacity
-                style={styles.createBtn}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('Register')}
-              >
+              <TouchableOpacity style={styles.createBtn} activeOpacity={0.85} onPress={() => navigation.navigate('Register')}>
+                <Ionicons name="person-add-outline" size={18} color={COLORS.textPrimary} />
                 <Text style={styles.createBtnText}>Create Account</Text>
               </TouchableOpacity>
 
-              {/* Bottom row */}
               <View style={styles.splashFooter}>
                 <TouchableOpacity activeOpacity={0.7}>
                   <Text style={styles.learnMore}>Learn more</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate('Onboarding')}
-                >
-                  <Text style={styles.skipNow}>Skip now  →</Text>
-                </TouchableOpacity>
               </View>
             </View>
           ) : (
-            /* ── LOGIN FORM ── */
             <Animated.View style={[styles.formContent, { opacity: formOpacity, transform: [{ translateY: formAnim }] }]}>
               <Text style={styles.formTitle}>Welcome back</Text>
               <Text style={styles.formSubtitle}>Sign in to continue your quest.</Text>
@@ -208,63 +155,61 @@ export default function Login({ navigation, route }) {
               {/* Email */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email address</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="juan@email.com"
-                  placeholderTextColor="#BDBDBD"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                <View style={styles.inputWrap}>
+                  <Ionicons name="mail-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="juan@email.com"
+                    placeholderTextColor={COLORS.textPlaceholder}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
               </View>
 
               {/* Password */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordRow}>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="lock-closed-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, styles.passwordInput]}
+                    style={styles.input}
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
-                    placeholderTextColor="#BDBDBD"
+                    placeholderTextColor={COLORS.textPlaceholder}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    returnKeyType="done"
                   />
-                  <TouchableOpacity
-                    style={styles.toggleBtn}
-                    onPress={() => setShowPassword(v => !v)}
-                  >
-                    <Text style={styles.toggleBtnText}>
-                      {showPassword ? 'Hide' : 'Show'}
-                    </Text>
+                  <TouchableOpacity style={styles.toggleBtn} onPress={() => setShowPassword(!showPassword)}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textMuted} />
                   </TouchableOpacity>
                 </View>
               </View>
 
               {!!statusMessage && (
-                <Text style={styles.statusText}>{statusMessage}</Text>
+                <View style={styles.statusWrap}>
+                  <Ionicons name={statusMessage.includes('Signing') ? 'hourglass-outline' : 'alert-circle-outline'} size={14} color={statusMessage.includes('Signing') ? COLORS.info : COLORS.primary} />
+                  <Text style={[styles.statusText, statusMessage.includes('Signing') && { color: COLORS.info }]}>{statusMessage}</Text>
+                </View>
               )}
 
               {/* Submit */}
-              <TouchableOpacity
-                style={[styles.submitBtn, isSubmitting && { opacity: 0.7 }]}
-                onPress={handleLogin}
-                disabled={isSubmitting}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.submitBtnText}>
-                  {isSubmitting ? 'Signing in…' : 'Sign in'}
-                </Text>
+              <TouchableOpacity style={[styles.submitBtn, isSubmitting && { opacity: 0.7 }]} onPress={handleLogin} disabled={isSubmitting} activeOpacity={0.85}>
+                <Text style={styles.submitBtnText}>{isSubmitting ? 'Signing in…' : 'Sign In'}</Text>
               </TouchableOpacity>
 
-              {/* Back to options */}
+              {/* Footer Links */}
               <View style={styles.formFooterRow}>
-                <TouchableOpacity onPress={goBack}>
-                  <Text style={styles.backLink}>← Back</Text>
+                <TouchableOpacity onPress={goBack} style={styles.backRow}>
+                  <Ionicons name="arrow-back" size={16} color={COLORS.textMuted} />
+                  <Text style={styles.backLink}>Back</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                   <Text style={styles.registerLink}>Create account</Text>
@@ -272,214 +217,63 @@ export default function Login({ navigation, route }) {
               </View>
             </Animated.View>
           )}
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// STYLES
-// ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#D32F2F',
-  },
+  root: { flex: 1, backgroundColor: COLORS.background },
 
-  // Red section
   redSection: {
-    flex: 1,
+    alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden',
+  },
+  decorCircleLarge: { position: 'absolute', top: -70, left: -70, width: 220, height: 220, borderRadius: 110, backgroundColor: COLORS.primarySurface },
+  decorCircleSmall: { position: 'absolute', top: 30, left: 40, width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primarySurface },
+  decorCircleRight: { position: 'absolute', bottom: 20, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: COLORS.primarySurface },
+  logoArea: { alignItems: 'center', justifyContent: 'center' },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    marginBottom: 12,
+    ...SHADOWS.small,
   },
-  decorCircleLarge: {
-    position: 'absolute',
-    top: -60,
-    left: -60,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  decorCircleSmall: {
-    position: 'absolute',
-    top: 30,
-    left: 40,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  logoArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  logoImage: { width: 68, height: 68 },
+  logoTitle: { fontSize: 28, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.5 },
 
-  // White panel
   whitePanel: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
-  },
-
-  // Splash buttons layout
-  splashContent: {
-    paddingHorizontal: 28,
-    paddingTop: 32,
-    paddingBottom: 28,
-  },
-  signInBtn: {
-    backgroundColor: '#D32F2F',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginBottom: 14,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  signInBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  createBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#1A1A1A',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginBottom: 0,
-  },
-  createBtnText: {
-    color: '#1A1A1A',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  splashFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-  },
-  learnMore: {
-    color: '#888888',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  skipNow: {
-    color: '#1A1A1A',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Login form layout
-  formContent: {
-    paddingHorizontal: 28,
-    paddingTop: 28,
-    paddingBottom: 20,
-  },
-  formTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-  },
-  formSubtitle: {
-    fontSize: 14,
-    color: '#777777',
-    marginBottom: 22,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#444444',
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    backgroundColor: '#FAFAFA',
-    color: '#1A1A1A',
-    fontSize: 15,
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  passwordInput: {
     flex: 1,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderRightWidth: 0,
+    overflow: 'hidden', paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
-  toggleBtn: {
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    backgroundColor: '#FAFAFA',
-    borderWidth: 1.5,
-    borderColor: '#E8E8E8',
-    borderLeftWidth: 0,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  toggleBtnText: {
-    color: '#888888',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  statusText: {
-    color: '#E53935',
-    fontSize: 13,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  submitBtn: {
-    backgroundColor: '#D32F2F',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 4,
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  submitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  formFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 18,
-  },
-  backLink: {
-    color: '#888888',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  registerLink: {
-    color: '#D32F2F',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+
+  splashContent: { paddingHorizontal: 28, paddingTop: 32, paddingBottom: 28 },
+  signInBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, marginBottom: 14, ...SHADOWS.button },
+  signInBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  createBtn: { backgroundColor: COLORS.surface, borderWidth: 1.5, borderColor: COLORS.inputBorder, borderRadius: RADIUS.md, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  createBtnText: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  splashFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
+  learnMore: { color: COLORS.textMuted, fontSize: 13, fontWeight: '500' },
+
+  formContent: { paddingHorizontal: 28, paddingTop: 28, paddingBottom: 20 },
+  formTitle: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 4, letterSpacing: -0.5 },
+  formSubtitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 22 },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.inputBorder, borderRadius: RADIUS.sm, backgroundColor: COLORS.inputBg, overflow: 'hidden' },
+  inputIcon: { marginLeft: 14 },
+  input: { flex: 1, paddingHorizontal: 12, paddingVertical: 13, color: COLORS.textPrimary, fontSize: 15 },
+  toggleBtn: { paddingHorizontal: 14, paddingVertical: 13 },
+  statusWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 10 },
+  statusText: { color: COLORS.primary, fontSize: 13 },
+  submitBtn: { backgroundColor: COLORS.primary, paddingVertical: 15, borderRadius: RADIUS.sm, alignItems: 'center', marginTop: 4, ...SHADOWS.button },
+  submitBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
+  formFooterRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 22 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+  backLink: { color: COLORS.textMuted, fontSize: 13, fontWeight: '500' },
+  registerLink: { color: COLORS.primary, fontSize: 13, fontWeight: '600', paddingVertical: 4 },
 });

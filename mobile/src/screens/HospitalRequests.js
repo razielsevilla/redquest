@@ -10,6 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 // ─── Mock data ───────────────────────────────────────────────────
 const ALL_REQUESTS = [
@@ -102,7 +103,7 @@ export default function HospitalRequests({ navigation }) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F7" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -217,7 +218,7 @@ export default function HospitalRequests({ navigation }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
   },
 
   // Header
@@ -232,12 +233,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: COLORS.textPrimary,
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,
-    color: '#888888',
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   addBtn: {
@@ -270,8 +271,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   filterPillActive: {
-    backgroundColor: '#D32F2F',
-    borderColor: '#D32F2F',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterPillText: {
     fontSize: 13,

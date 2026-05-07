@@ -1,149 +1,121 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   StatusBar,
   Animated,
+  Image,
+  KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { registerUser } from '../lib/api';
+import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
-// ─────────────────────────────────────────────────────────────
-// Red blood drop logo (for light background)
-// ─────────────────────────────────────────────────────────────
-function RedDropLogo({ size = 72 }) {
-  const s = size / 90;
-  return (
-    <Svg width={size} height={size * 1.33} viewBox="0 0 90 120">
-      <Defs>
-        <LinearGradient id="rdrop" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#FF5252" />
-          <Stop offset="100%" stopColor="#B71C1C" />
-        </LinearGradient>
-      </Defs>
-      <Path
-        d="M45 4 C33 20 14 38 10 58 C6 80 23 108 45 108 C67 108 84 80 80 58 C76 38 57 20 45 4 Z"
-        fill="url(#rdrop)"
-      />
-      <Path
-        d="M26 38 C22 52 21 66 25 78"
-        stroke="rgba(255,255,255,0.45)"
-        strokeWidth="5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <Path
-        d="M37 65 C37 60 42 57 45 62 C48 57 53 60 53 65 C53 70 45 76 45 76 C45 76 37 70 37 65 Z"
-        fill="rgba(255,255,255,0.55)"
-      />
-    </Svg>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────
 const ROLES = [
-  { key: 'donor',         label: 'Donor' },
-  { key: 'requester',     label: 'Family' },
-  { key: 'hospital_staff',label: '🏥 Hospital' },
+  { key: 'donor',          label: 'Donor',    icon: 'water' },
+  { key: 'requester',      label: 'Family',   icon: 'people' },
+  { key: 'hospital_staff', label: 'Hospital', icon: 'medkit' },
 ];
 
 const BASE_TYPES = ['A', 'B', 'O', 'AB'];
 
-// ─────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
 export default function Register({ navigation }) {
   const [step, setStep] = useState(1);
 
-  // Step 1 fields
-  const [name,           setName]           = useState('');
-  const [email,          setEmail]          = useState('');
-  const [password,       setPassword]       = useState('');
-  const [showPassword,   setShowPassword]   = useState(false);
-  const [phone,          setPhone]          = useState('');
-  const [role,           setRole]           = useState('donor');
-  const [locationAllowed,setLocationAllowed]= useState(false);
+  // Step 1: Role
+  const [role, setRole] = useState('donor');
+  
+  // Step 2: Account
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Step 2 fields
-  const [baseType,       setBaseType]       = useState('O');
-  const [rhFactor,       setRhFactor]       = useState('+');
-  const [wantsNotifs,    setWantsNotifs]    = useState(false);
+  // Step 3: Contact & Location
+  const [phone, setPhone] = useState('');
+  const [locationAllowed, setLocationAllowed] = useState(false);
 
-  // Submission
-  const [isSubmitting,   setIsSubmitting]   = useState(false);
-  const [statusMessage,  setStatusMessage]  = useState('');
+  // Step 4: Blood Type (Donors/Requesters only)
+  const [baseType, setBaseType] = useState('O');
+  const [rhFactor, setRhFactor] = useState('+');
+  const [wantsNotifs, setWantsNotifs] = useState(false);
 
-  // Animation
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  // UI State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
-  const goToStep2 = () => {
-    if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
-      setStatusMessage('Please fill in all fields.');
-      return;
-    }
+  // Keyboard handling for tight screens
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const headerHeight = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const kShow = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      Animated.timing(headerHeight, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+    });
+    const kHide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      setKeyboardVisible(false);
+      Animated.timing(headerHeight, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+    });
+    return () => { kShow.remove(); kHide.remove(); };
+  }, []);
+
+  const totalSteps = role === 'hospital_staff' ? 3 : 4;
+
+  const nextStep = () => {
     setStatusMessage('');
-    // Hospital staff skip blood-type step — register immediately
-    if (role === 'hospital_staff') {
-      handleRegisterDirect();
-      return;
+    if (step === 1) {
+      setStep(2);
+    } else if (step === 2) {
+      if (!name.trim() || !email.trim() || !password.trim()) {
+        setStatusMessage('Please fill all account fields.');
+        return;
+      }
+      setStep(3);
+    } else if (step === 3) {
+      if (!phone.trim()) {
+        setStatusMessage('Please provide a contact number.');
+        return;
+      }
+      if (role === 'hospital_staff') {
+        submitRegistration();
+      } else {
+        setStep(4);
+      }
+    } else if (step === 4) {
+      submitRegistration();
     }
-    slideAnim.setValue(40);
-    setStep(2);
-    Animated.timing(slideAnim, { toValue: 0, duration: 320, useNativeDriver: true }).start();
   };
 
-  async function handleRegisterDirect() {
+  const prevStep = () => {
+    setStatusMessage('');
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const submitRegistration = async () => {
     setIsSubmitting(true);
     setStatusMessage('Creating account…');
     try {
       await registerUser({
-        name:       name.trim(),
-        email:      email.trim().toLowerCase(),
-        phone:      phone.trim(),
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
         password,
         role,
-        blood_type: null,
+        blood_type: role === 'hospital_staff' ? null : `${baseType}${rhFactor}`,
       });
-      navigation?.navigate('Login', {
-        email:   email.trim().toLowerCase(),
-        message: 'Hospital account created! Sign in to continue.',
-      });
-    } catch (err) {
-      setStatusMessage(err.message || 'Could not create account. Try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  const goBack = () => {
-    setStep(1);
-    setStatusMessage('');
-  };
-
-  const bloodType = `${baseType}${rhFactor}`;
-
-  async function handleRegister() {
-    setIsSubmitting(true);
-    setStatusMessage('Creating account…');
-    try {
-      await registerUser({
-        name:       name.trim(),
-        email:      email.trim().toLowerCase(),
-        phone:      phone.trim(),
-        password,
-        role,
-        blood_type: bloodType,
-      });
-      navigation?.navigate('Login', {
-        email:   email.trim().toLowerCase(),
+      navigation.navigate('Login', {
+        email: email.trim().toLowerCase(),
         message: 'Account created! Sign in to continue.',
       });
     } catch (err) {
@@ -151,579 +123,355 @@ export default function Register({ navigation }) {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
-  // ── STEP 1 ────────────────────────────────────────────────
-  if (step === 1) {
-    return (
-      <SafeAreaView style={styles.root}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Logo */}
-          <View style={styles.logoRow}>
-            <RedDropLogo size={44} />
-          </View>
+  // Header progress bar
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={prevStep} style={styles.backBtn}>
+        <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+      </TouchableOpacity>
+      <View style={styles.progressWrap}>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${(step / totalSteps) * 100}%` }]} />
+        </View>
+        <Text style={styles.progressText}>Step {step} of {totalSteps}</Text>
+      </View>
+      <View style={{ width: 36 }} />
+    </View>
+  );
 
-          {/* Header */}
-          <Text style={styles.pageTitle}>Create your account</Text>
-          <Text style={styles.pageSubtitle}>Join RedQuest and be a hero.</Text>
-
-          {/* Card */}
-          <View style={styles.card}>
-
-            {/* Full name */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full name</Text>
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Juan dela Cruz"
-                placeholderTextColor="#BDBDBD"
-              />
-            </View>
-
-            {/* Email */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="juan@email.com"
-                placeholderTextColor="#BDBDBD"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/* Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordRow}>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor="#BDBDBD"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity
-                  style={styles.showBtn}
-                  onPress={() => setShowPassword(v => !v)}
-                >
-                  <Text style={styles.showBtnText}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Contact number */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Contact number</Text>
-              <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="0917 123 4567"
-                placeholderTextColor="#BDBDBD"
-                keyboardType="phone-pad"
-              />
-            </View>
-
-          </View>
-
-          {/* I am a… */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>I am a…</Text>
-            <View style={styles.pillRow}>
-              {ROLES.map(r => (
-                <TouchableOpacity
-                  key={r.key}
-                  style={[styles.pill, role === r.key && styles.pillActive]}
-                  onPress={() => setRole(r.key)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.pillText, role === r.key && styles.pillTextActive]}>
-                    {r.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Location access */}
-          <TouchableOpacity
-            style={[styles.locationBtn, locationAllowed && styles.locationBtnActive]}
-            onPress={() => setLocationAllowed(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.locationIcon]}>
-              {locationAllowed ? '✓' : '📍'}
-            </Text>
-            <Text style={[styles.locationText, locationAllowed && styles.locationTextActive]}>
-              {locationAllowed ? 'Location access granted' : 'Allow location access'}
-            </Text>
-          </TouchableOpacity>
-
-          {!!statusMessage && (
-            <Text style={styles.statusText}>{statusMessage}</Text>
-          )}
-
-          {/* Next / Register button */}
-          <TouchableOpacity style={styles.primaryBtn} onPress={goToStep2} activeOpacity={0.85} disabled={isSubmitting}>
-            <Text style={styles.primaryBtnText}>
-              {isSubmitting ? 'Creating account…' : role === 'hospital_staff' ? 'Register' : 'Next'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Sign in link */}
-          <TouchableOpacity style={styles.linkRow} onPress={() => navigation?.navigate('Login')}>
-            <Text style={styles.linkText}>Already have an account? <Text style={styles.linkAccent}>Sign in</Text></Text>
-          </TouchableOpacity>
-
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // ── STEP 2 ────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      
+      {renderHeader()}
 
-      <Animated.ScrollView
-        contentContainerStyle={styles.step2Content}
-        showsVerticalScrollIndicator={false}
-        style={{ transform: [{ translateY: slideAnim }] }}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.keyboardView}
       >
-        {/* Logo */}
-        <View style={styles.step2Logo}>
-          <RedDropLogo size={68} />
-        </View>
+        <View style={styles.content}>
+          {/* Dynamic Header Section - shrinks on keyboard open */}
+          <Animated.View style={[styles.titleSection, { 
+            opacity: headerHeight,
+            height: headerHeight.interpolate({ inputRange: [0, 1], outputRange: [0, 80] }),
+            marginBottom: headerHeight.interpolate({ inputRange: [0, 1], outputRange: [0, 20] })
+          }]}>
+            <Text style={styles.pageTitle}>
+              {step === 1 && "Who are you?"}
+              {step === 2 && "Create profile"}
+              {step === 3 && "Contact info"}
+              {step === 4 && "Blood type"}
+            </Text>
+            <Text style={styles.pageSubtitle}>
+              {step === 1 && "Choose your role in RedQuest."}
+              {step === 2 && "Enter your basic account details."}
+              {step === 3 && "How can we reach you?"}
+              {step === 4 && "Help us match you correctly."}
+            </Text>
+          </Animated.View>
 
-        {/* Title */}
-        <Text style={styles.step2Title}>Please pick your{'\n'}blood type</Text>
+          {/* ── STEP 1: ROLE ── */}
+          {step === 1 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.roleGrid}>
+                {ROLES.map(r => (
+                  <TouchableOpacity
+                    key={r.key}
+                    style={[styles.roleCard, role === r.key && styles.roleCardActive]}
+                    onPress={() => setRole(r.key)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.roleIconWrap, role === r.key && styles.roleIconWrapActive]}>
+                      <Ionicons name={r.icon} size={28} color={role === r.key ? COLORS.white : COLORS.primary} />
+                    </View>
+                    <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>{r.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
 
-        {/* Subtitle link */}
-        <TouchableOpacity activeOpacity={0.7}>
-          <Text style={styles.step2Subtitle}>Don't know about your blood type?</Text>
-        </TouchableOpacity>
+          {/* ── STEP 2: ACCOUNT ── */}
+          {step === 2 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="person-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Juan dela Cruz"
+                    placeholderTextColor={COLORS.textPlaceholder}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
 
-        {/* Blood group 2×2 grid */}
-        <View style={styles.bloodGrid}>
-          {BASE_TYPES.map(bt => (
-            <TouchableOpacity
-              key={bt}
-              style={[styles.bloodCell, baseType === bt && styles.bloodCellActive]}
-              onPress={() => setBaseType(bt)}
-              activeOpacity={0.8}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email Address</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="mail-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="juan@email.com"
+                    placeholderTextColor={COLORS.textPlaceholder}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="lock-closed-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••"
+                    placeholderTextColor={COLORS.textPlaceholder}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity style={styles.showBtn} onPress={() => setShowPassword(!showPassword)}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* ── STEP 3: CONTACT ── */}
+          {step === 3 && (
+            <View style={styles.stepContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Contact Number</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="call-outline" size={18} color={COLORS.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="0917 123 4567"
+                    placeholderTextColor={COLORS.textPlaceholder}
+                    keyboardType="phone-pad"
+                    returnKeyType="done"
+                  />
+                </View>
+              </View>
+
+              <Text style={[styles.label, { marginTop: 12 }]}>Location Access</Text>
+              <TouchableOpacity
+                style={[styles.locationBtn, locationAllowed && styles.locationBtnActive]}
+                onPress={() => setLocationAllowed(!locationAllowed)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.locationIconWrap, locationAllowed && styles.locationIconWrapActive]}>
+                  <Ionicons
+                    name={locationAllowed ? 'checkmark-circle' : 'location'}
+                    size={20}
+                    color={locationAllowed ? COLORS.success : COLORS.primary}
+                  />
+                </View>
+                <Text style={[styles.locationText, locationAllowed && styles.locationTextActive]}>
+                  {locationAllowed ? 'Location access granted' : 'Allow location access'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── STEP 4: BLOOD TYPE ── */}
+          {step === 4 && (
+            <View style={styles.stepContainer}>
+              <Text style={styles.label}>Base Type</Text>
+              <View style={styles.bloodGrid}>
+                {BASE_TYPES.map(bt => (
+                  <TouchableOpacity
+                    key={bt}
+                    style={[styles.bloodCell, baseType === bt && styles.bloodCellActive]}
+                    onPress={() => setBaseType(bt)}
+                  >
+                    <Text style={[styles.bloodCellText, baseType === bt && styles.bloodCellTextActive]}>{bt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Rh Factor</Text>
+              <View style={styles.rhRow}>
+                <TouchableOpacity style={[styles.rhBtn, rhFactor === '+' && styles.rhBtnActive]} onPress={() => setRhFactor('+')}>
+                  <Text style={[styles.rhBtnText, rhFactor === '+' && styles.rhBtnTextActive]}>Positive (+)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.rhBtn, rhFactor === '-' && styles.rhBtnActive]} onPress={() => setRhFactor('-')}>
+                  <Text style={[styles.rhBtnText, rhFactor === '-' && styles.rhBtnTextActive]}>Negative (−)</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.checkRow} onPress={() => setWantsNotifs(!wantsNotifs)}>
+                <View style={[styles.checkbox, wantsNotifs && styles.checkboxActive]}>
+                  {wantsNotifs && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+                </View>
+                <Text style={styles.checkLabel}>Receive blood campaign notifications</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Spacer to push buttons to bottom */}
+          <View style={{ flex: 1 }} />
+
+          {/* Status Message */}
+          {!!statusMessage && (
+            <View style={styles.statusWrap}>
+              <Ionicons name={isSubmitting ? 'hourglass-outline' : 'alert-circle-outline'} size={14} color={isSubmitting ? COLORS.info : COLORS.primary} />
+              <Text style={[styles.statusText, isSubmitting && { color: COLORS.info }]}>{statusMessage}</Text>
+            </View>
+          )}
+
+          {/* Bottom Action */}
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={[styles.primaryBtn, isSubmitting && { opacity: 0.7 }]} 
+              onPress={nextStep} 
+              activeOpacity={0.85} 
+              disabled={isSubmitting}
             >
-              <Text style={[styles.bloodCellText, baseType === bt && styles.bloodCellTextActive]}>
-                {bt}
+              <Text style={styles.primaryBtnText}>
+                {isSubmitting ? 'Processing…' : step === totalSteps ? 'Create Account' : 'Continue'}
               </Text>
+              <Ionicons
+                name={step === totalSteps ? 'checkmark-circle' : 'arrow-forward'}
+                size={20}
+                color={COLORS.white}
+                style={{ marginLeft: 6 }}
+              />
             </TouchableOpacity>
-          ))}
-        </View>
 
-        {/* Rh factor + / − */}
-        <View style={styles.rhRow}>
-          <TouchableOpacity
-            style={[styles.rhBtn, rhFactor === '+' && styles.rhBtnActive]}
-            onPress={() => setRhFactor('+')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.rhBtnText, rhFactor === '+' && styles.rhBtnTextActive]}>+</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.rhBtn, rhFactor === '-' && styles.rhBtnActive]}
-            onPress={() => setRhFactor('-')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.rhBtnText, rhFactor === '-' && styles.rhBtnTextActive]}>−</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Selected preview */}
-        <Text style={styles.bloodPreview}>
-          Selected: <Text style={styles.bloodPreviewAccent}>{bloodType}</Text>
-        </Text>
-
-        {/* Notification checkbox */}
-        <TouchableOpacity
-          style={[styles.checkRow, { marginTop: 32 }]}
-          onPress={() => setWantsNotifs(v => !v)}
-          activeOpacity={0.8}
-        >
-          <View style={[styles.checkbox, wantsNotifs && styles.checkboxActive]}>
-            {wantsNotifs && <Text style={styles.checkmark}>✓</Text>}
+            {step === 1 && (
+              <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.linkText}>
+                  Already have an account? <Text style={styles.linkAccent}>Sign in</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={styles.checkLabel}>
-            I want to receive notification about blood donation campaigns
-          </Text>
-        </TouchableOpacity>
-
-        {!!statusMessage && (
-          <Text style={styles.statusText}>{statusMessage}</Text>
-        )}
-
-        {/* Finish button */}
-        <TouchableOpacity
-          style={[styles.primaryBtn, { marginTop: 32 }, isSubmitting && { opacity: 0.7 }]}
-          onPress={handleRegister}
-          disabled={isSubmitting}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.primaryBtnText}>
-            {isSubmitting ? 'Creating account…' : 'Finish'}
-          </Text>
-        </TouchableOpacity>
-
-      </Animated.ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// STYLES
-// ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.background },
+  keyboardView: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 24, paddingBottom: 24 },
+  
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+  },
+  backBtn: { padding: 4 },
+  progressWrap: { flex: 1, marginHorizontal: 20, alignItems: 'center' },
+  progressTrack: { width: '100%', height: 6, backgroundColor: COLORS.border, borderRadius: 3, marginBottom: 6, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: COLORS.primary },
+  progressText: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
 
-  root: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
+  titleSection: { alignItems: 'center', justifyContent: 'center' },
+  pageTitle: { fontSize: 26, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.5, marginBottom: 4 },
+  pageSubtitle: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
 
-  // ── Step 1 ──
-  scrollContent: {
-    paddingHorizontal: 22,
-    paddingTop: 0,
-    paddingBottom: 16,
-  },
-  logoRow: {
-    alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 0,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingTop: 20,
-    paddingBottom: 8,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#555555',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: '#F9F9F9',
-    borderWidth: 1.5,
-    borderColor: '#EFEFEF',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 15,
-    color: '#1A1A1A',
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderRightWidth: 0,
-  },
-  showBtn: {
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    backgroundColor: '#F9F9F9',
-    borderWidth: 1.5,
-    borderColor: '#EFEFEF',
-    borderLeftWidth: 0,
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  showBtnText: {
-    color: '#888888',
-    fontWeight: '600',
-    fontSize: 13,
-  },
+  stepContainer: { flex: 0, width: '100%', marginTop: 10 },
 
-  // I am a…
-  section: {
-    marginBottom: 14,
+  // Role Grid
+  roleGrid: { gap: 12 },
+  roleCard: {
+    flexDirection: 'row', alignItems: 'center', padding: 18,
+    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.inputBorder,
+    backgroundColor: COLORS.surface, ...SHADOWS.small,
   },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#444444',
-    marginBottom: 10,
+  roleCardActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySurface },
+  roleIconWrap: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center', justifyContent: 'center', marginRight: 16,
   },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  roleIconWrapActive: { backgroundColor: COLORS.primary },
+  roleLabel: { fontSize: 16, fontWeight: '600', color: COLORS.textSecondary },
+  roleLabelActive: { color: COLORS.primary, fontWeight: '800' },
+
+  // Inputs
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
+    borderWidth: 1.5, borderColor: COLORS.inputBorder, borderRadius: RADIUS.sm,
   },
-  pill: {
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 50,
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
-  },
-  pillActive: {
-    backgroundColor: '#D32F2F',
-    borderColor: '#D32F2F',
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#555555',
-  },
-  pillTextActive: {
-    color: '#FFFFFF',
-  },
+  inputIcon: { marginLeft: 14 },
+  input: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, fontSize: 15, color: COLORS.textPrimary },
+  showBtn: { padding: 14 },
 
   // Location
   locationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E0E0E0',
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md, borderWidth: 1.5, borderColor: COLORS.inputBorder,
+    padding: 16, gap: 12, ...SHADOWS.small,
   },
-  locationBtnActive: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#F1F8F1',
+  locationBtnActive: { borderColor: COLORS.success, backgroundColor: COLORS.successLight },
+  locationIconWrap: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryMuted,
+    alignItems: 'center', justifyContent: 'center',
   },
-  locationIcon: {
-    fontSize: 18,
-  },
-  locationText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#777777',
-  },
-  locationTextActive: {
-    color: '#4CAF50',
-  },
+  locationIconWrapActive: { backgroundColor: COLORS.successLight },
+  locationText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
+  locationTextActive: { color: COLORS.success },
 
-  // Shared
-  statusText: {
-    color: '#E53935',
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  primaryBtn: {
-    backgroundColor: '#D32F2F',
-    paddingVertical: 16,
-    borderRadius: 50,
-    alignItems: 'center',
-    shadowColor: '#D32F2F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 14,
-    width: '100%',
-  },
-  primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  linkRow: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  linkText: {
-    fontSize: 13,
-    color: '#888888',
-  },
-  linkAccent: {
-    color: '#D32F2F',
-    fontWeight: '700',
-  },
-
-  // ── Step 2 ──
-  backBtn: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  backBtnText: {
-    fontSize: 22,
-    color: '#1A1A1A',
-  },
-  step2Content: {
-    paddingHorizontal: 28,
-    paddingTop: 32,
-    paddingBottom: 0,
-    alignItems: 'center',
-  },
-  step2Logo: {
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  step2Title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    lineHeight: 36,
-    marginBottom: 10,
-  },
-  step2Subtitle: {
-    fontSize: 13,
-    color: '#D32F2F',
-    fontWeight: '600',
-    marginBottom: 28,
-  },
-
-  // Blood type grid 2×2
-  bloodGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    width: '100%',
-    marginBottom: 16,
-  },
+  // Blood Grid
+  bloodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   bloodCell: {
-    width: '46%',
-    paddingVertical: 18,
-    borderRadius: 14,
-    backgroundColor: '#EEEEEE',
-    alignItems: 'center',
+    width: '48%', paddingVertical: 16, borderRadius: RADIUS.sm, backgroundColor: COLORS.surface,
+    alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.inputBorder,
   },
-  bloodCellActive: {
-    backgroundColor: '#D32F2F',
-  },
-  bloodCellText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#555555',
-  },
-  bloodCellTextActive: {
-    color: '#FFFFFF',
-  },
+  bloodCellActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  bloodCellText: { fontSize: 18, fontWeight: '700', color: COLORS.textSecondary },
+  bloodCellTextActive: { color: COLORS.white },
 
-  // Rh factor row
-  rhRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
-  },
+  // Rh
+  rhRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   rhBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#EEEEEE',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1, paddingVertical: 14, borderRadius: RADIUS.sm, backgroundColor: COLORS.surface,
+    alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.inputBorder,
   },
-  rhBtnActive: {
-    backgroundColor: '#D32F2F',
-  },
-  rhBtnText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#555555',
-  },
-  rhBtnTextActive: {
-    color: '#FFFFFF',
-  },
-
-  bloodPreview: {
-    fontSize: 13,
-    color: '#888888',
-    marginBottom: 24,
-    fontWeight: '500',
-  },
-  bloodPreviewAccent: {
-    color: '#D32F2F',
-    fontWeight: '800',
-    fontSize: 15,
-  },
+  rhBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  rhBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
+  rhBtnTextActive: { color: COLORS.white },
 
   // Checkbox
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 24,
-    width: '100%',
-  },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: '#D32F2F',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-    flexShrink: 0,
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.inputBorder,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface,
   },
-  checkboxActive: {
-    backgroundColor: '#D32F2F',
+  checkboxActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  checkLabel: { flex: 1, fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
+
+  // Footer & Status
+  footer: { width: '100%', marginTop: 'auto' },
+  statusWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 12 },
+  statusText: { color: COLORS.primary, fontSize: 13, fontWeight: '500' },
+  primaryBtn: {
+    backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: RADIUS.md,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', ...SHADOWS.button,
   },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  checkLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: '#555555',
-    lineHeight: 19,
-  },
+  primaryBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
+  linkRow: { alignItems: 'center', paddingVertical: 16 },
+  linkText: { fontSize: 13, color: COLORS.textMuted },
+  linkAccent: { color: COLORS.primary, fontWeight: '700' },
 });
