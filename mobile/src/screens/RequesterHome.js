@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  SafeAreaView, StatusBar, Animated,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
@@ -81,6 +81,7 @@ export default function RequesterHome({ navigation }) {
           </View>
         </Stagger>
 
+
         {/* Post New Request */}
         <Stagger index={2}>
           <TouchableOpacity
@@ -88,7 +89,7 @@ export default function RequesterHome({ navigation }) {
             activeOpacity={0.88}
             onPress={() => navigation.navigate('PostRequest')}
           >
-            <Ionicons name="add-circle-outline" size={20} color={COLORS.white} />
+            <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
             <Text style={styles.createBtnText}>Post New Blood Request</Text>
           </TouchableOpacity>
         </Stagger>
@@ -163,10 +164,10 @@ const styles = StyleSheet.create({
 
   createBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingVertical: 16,
-    marginBottom: 18, ...SHADOWS.button,
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.md, paddingVertical: 16,
+    marginBottom: 18, borderWidth: 1.5, borderColor: COLORS.primary, ...SHADOWS.small,
   },
-  createBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
+  createBtnText: { color: COLORS.primary, fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
 
   section: {
     backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 16,

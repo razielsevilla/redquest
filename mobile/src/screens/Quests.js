@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, StatusBar, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
@@ -9,7 +10,7 @@ const QUESTS_DATA = [
   { id: '3', date: 'Mar 05', type: 'O+', hospital: 'Makati Med',  status: 'Completed', xp: '+150 XP' },
 ];
 
-export default function Quests() {
+export default function Quests({ navigation }) {
   const renderItem = ({ item }) => (
     <View style={styles.questCard}>
       <View style={styles.bloodPill}>
@@ -37,15 +38,41 @@ export default function Quests() {
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <View style={styles.header}>
-        <Text style={styles.title}>Quest History</Text>
-        <Text style={styles.subtitle}>Your past heroic deeds</Text>
+        <Text style={styles.title}>Quests</Text>
+        <Text style={styles.subtitle}>Active and past quests</Text>
       </View>
+
+      <TouchableOpacity 
+        style={styles.urgentCard}
+        onPress={() => navigation.navigate('QuestAlert')}
+        activeOpacity={0.85}
+      >
+        <View style={styles.urgentLeft}>
+          <Ionicons name="location" size={22} color={COLORS.white} />
+          <View style={{ flex: 1 }}>
+            <View style={styles.urgentTitleRow}>
+              <Text style={styles.urgentTitle}>Urgent Requests</Text>
+              <View style={styles.urgentBadge}>
+                <Text style={styles.urgentBadgeText}>3</Text>
+              </View>
+            </View>
+            <Text style={styles.urgentSub}>Blood needed within 5 km</Text>
+          </View>
+        </View>
+        <View style={styles.urgentTypes}>
+          {['O+', 'A+', 'B+'].map(t => (
+            <View key={t} style={styles.urgentTypeChip}>
+              <Text style={styles.urgentTypeText}>{t}</Text>
+            </View>
+          ))}
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.summaryRow}>
         <View style={styles.summaryChip}>
           <Ionicons name="flash" size={16} color={COLORS.primary} />
           <Text style={styles.summaryValue}>{QUESTS_DATA.length}</Text>
-          <Text style={styles.summaryLabel}>Quests</Text>
+          <Text style={styles.summaryLabel}>Total Quests</Text>
         </View>
         <View style={styles.summaryChip}>
           <Ionicons name="star" size={16} color={COLORS.warning} />
@@ -77,10 +104,66 @@ export default function Quests() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  header: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 10 },
-  title: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.3 },
-  subtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  root: { flex: 1, backgroundColor: COLORS.background, paddingTop: 10 },
+  header: { paddingHorizontal: 18, paddingTop: 24, paddingBottom: 10 },
+  title: { fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: COLORS.textMuted, marginTop: 2 },
+
+  urgentCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    padding: 16,
+    marginHorizontal: 18,
+    marginBottom: 14,
+    ...SHADOWS.card,
+  },
+  urgentLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  urgentTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  urgentTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  urgentBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  urgentBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  urgentSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  urgentTypes: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  urgentTypeChip: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: RADIUS.full,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  urgentTypeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
 
   summaryRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, marginBottom: 14 },
   summaryChip: {

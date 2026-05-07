@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity,
   ScrollView, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -141,7 +142,7 @@ export default function QuestAccepted({ navigation }) {
         {/* Demo button */}
         <TouchableOpacity style={styles.primaryBtn}
           onPress={() => navigation.navigate('RiderEnRoute')} activeOpacity={0.85}>
-          <Text style={styles.primaryBtnText}>Demo: Rider Arrives</Text>
+          <Text style={styles.primaryBtnText}>Continue</Text>
           <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
         </TouchableOpacity>
 

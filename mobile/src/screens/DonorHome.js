@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -6,7 +7,6 @@ import {
   Switch,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Animated,
   StatusBar,
 } from 'react-native';
@@ -180,14 +180,18 @@ export default function DonorHome({ navigation }) {
 
         {/* ── REWARDS & POINTS card ── */}
         <Stagger index={5}>
-          <TouchableOpacity style={[styles.card, styles.rewardsCard]} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={[styles.card, styles.rewardsCard]} 
+            onPress={() => navigation.navigate('Badges')}
+            activeOpacity={0.85}
+          >
             <View style={styles.rewardsLeft}>
               <View style={styles.rewardsIconWrap}>
                 <Ionicons name="trophy" size={22} color={COLORS.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rewardsTitle}>Rewards & Points</Text>
-                <Text style={styles.rewardsSub}>2,350 VitaPoints earned</Text>
+                <Text style={styles.rewardsSub}>2,350 RedQuest points earned</Text>
                 <View style={styles.rewardsBadgeRow}>
                   <View style={[styles.badge, styles.badgeGreen]}>
                     <Text style={styles.badgeTextGreen}>4 Badges</Text>
@@ -203,7 +207,11 @@ export default function DonorHome({ navigation }) {
         </Stagger>
 
         {/* ── RECENT QUESTS ── */}
-        <View style={styles.card}>
+        <TouchableOpacity 
+          style={styles.card} 
+          onPress={() => navigation.navigate('Quests')}
+          activeOpacity={0.9}
+        >
           <Text style={styles.sectionTitle}>Recent quests (2)</Text>
           {[
             { date: 'Apr 30', type: 'O+', hospital: "St. Luke's" },
@@ -218,43 +226,10 @@ export default function DonorHome({ navigation }) {
               </Text>
             </View>
           ))}
-          <TouchableOpacity style={styles.viewHistoryBtn}>
+          <View style={styles.viewHistoryBtn}>
             <Text style={styles.viewHistoryText}>View full history</Text>
             <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── URGENT REQUESTS card ── */}
-        <View style={styles.urgentCard}>
-          <View style={styles.urgentLeft}>
-            <Ionicons name="location" size={22} color={COLORS.white} />
-            <View style={{ flex: 1 }}>
-              <View style={styles.urgentTitleRow}>
-                <Text style={styles.urgentTitle}>Urgent Requests</Text>
-                <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentBadgeText}>3</Text>
-                </View>
-              </View>
-              <Text style={styles.urgentSub}>Blood needed within 5 km</Text>
-            </View>
           </View>
-          <View style={styles.urgentTypes}>
-            {['O+', 'A+', 'B+'].map(t => (
-              <View key={t} style={styles.urgentTypeChip}>
-                <Text style={styles.urgentTypeText}>{t}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* ── DEMO BUTTON ── */}
-        <TouchableOpacity
-          style={styles.demoBtn}
-          onPress={() => navigation.navigate('QuestAlert')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="flash-outline" size={18} color={COLORS.textPrimary} />
-          <Text style={styles.demoBtnText}>Demo: Trigger Quest Alert</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -264,10 +239,7 @@ export default function DonorHome({ navigation }) {
 
 // ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  root: { flex: 1, backgroundColor: COLORS.background, paddingTop: 10, },
 
   // Level-up banner
   levelUpBanner: {
@@ -574,77 +546,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Urgent requests card
-  urgentCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    marginBottom: 12,
-  },
-  urgentLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 12,
-  },
-  urgentTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  urgentTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  urgentBadge: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  urgentBadgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  urgentSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  urgentTypes: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  urgentTypeChip: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: RADIUS.full,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  urgentTypeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  // Demo button
-  demoBtn: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-    borderWidth: 1.5,
-    borderColor: COLORS.inputBorder,
-  },
-  demoBtnText: {
-    color: COLORS.textPrimary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
 });
