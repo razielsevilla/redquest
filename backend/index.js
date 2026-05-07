@@ -158,7 +158,7 @@ async function createRequestWithQuests({ requesterId, hospitalId, bloodType, uni
     `INSERT INTO blood_requests (requester_id, hospital_id, blood_type, units_needed, urgency, notes, search_radius_m, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, 'matching')
      RETURNING *`,
-    [requesterId, hospitalId, bloodType, unitsNeeded, urgency, notes || null, SEARCH_RADIUS_METERS]
+    [requesterId, hospitalId, bloodType, unitsNeeded, urgency, notes || null, 10000]
   );
   const request = requestResult.rows[0];
   const donors = await findCompatibleDonors(hospitalId, bloodType);
