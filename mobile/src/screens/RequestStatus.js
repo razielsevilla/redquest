@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
+import { getRequestDetails } from '../lib/api';
 
 // ─── Status steps ───────────────────────────────────────────
 const STEPS = [
@@ -86,7 +87,10 @@ function PulseSpinner() {
 }
 
 // ─── Main Screen ────────────────────────────────────────────
-export default function RequestStatus({ navigation }) {
+export default function RequestStatus({ navigation, route }) {
+  const reqId = route.params?.request?.id;
+  const [requestObj, setRequestObj] = useState(route.params?.request || null);
+  const [activeQuest, setActiveQuest] = useState(null);
   const [status, setStatus] = useState('matching');
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -95,10 +99,34 @@ export default function RequestStatus({ navigation }) {
   }, []);
 
   useEffect(() => {
-    if (status === 'matching') { const t = setTimeout(() => setStatus('matched'), 5000); return () => clearTimeout(t); }
-    if (status === 'matched')  { const t = setTimeout(() => setStatus('dispatched'), 5000); return () => clearTimeout(t); }
-    if (status === 'dispatched') { const t = setTimeout(() => setStatus('done'), 8000); return () => clearTimeout(t); }
-  }, [status]);
+    if (!reqId) return;
+    
+    async function loadData() {
+      try {
+        const res = await getRequestDetails(reqId);
+        if (res?.request) {
+          setRequestObj(res.request);
+          // Set active quest if donor accepted
+          if (res.quests && res.quests.length > 0) {
+            const accepted = res.quests.find(q => q.status !== 'pending' && q.status !== 'declined');
+            if (accepted) setActiveQuest(accepted);
+          }
+          
+          const s = res.request.status;
+          if (['matching', 'notified'].includes(s)) setStatus('matching');
+          else if (['accepted'].includes(s)) setStatus('matched');
+          else if (['rider_dispatched', 'donor_en_route', 'donor_arrived'].includes(s)) setStatus('dispatched');
+          else if (['complete'].includes(s)) setStatus('done');
+        }
+      } catch (err) {
+        console.error('Failed to fetch request status:', err);
+      }
+    }
+    
+    loadData();
+    const interval = setInterval(loadData, 3000);
+    return () => clearInterval(interval);
+  }, [reqId]);
 
   const currentIndex = STEP_INDEX[status];
 
@@ -120,11 +148,11 @@ export default function RequestStatus({ navigation }) {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Blood request posted</Text>
           <View style={styles.summaryRow}>
-            <View style={styles.summaryBadge}><Text style={styles.summaryBadgeText}>O+</Text></View>
+            <View style={styles.summaryBadge}><Text style={styles.summaryBadgeText}>{requestObj?.blood_type || 'O+'}</Text></View>
             <Text style={styles.summarySep}>•</Text>
-            <Text style={styles.summaryDetail}>Urgent</Text>
+            <Text style={styles.summaryDetail}>{requestObj?.urgency || 'Urgent'}</Text>
             <Text style={styles.summarySep}>•</Text>
-            <Text style={styles.summaryDetail}>St. Luke's</Text>
+            <Text style={styles.summaryDetail}>{requestObj?.hospital_name || 'Hospital'}</Text>
           </View>
         </View>
 
@@ -159,14 +187,14 @@ export default function RequestStatus({ navigation }) {
               </View>
             </View>
             <View style={styles.infoCard}>
-              <Text style={styles.infoCardLabel}>RIDER INFORMATION</Text>
+              <Text style={styles.infoCardLabel}>DONOR INFORMATION</Text>
               <View style={styles.personRow}>
                 <View style={[styles.avatar, { backgroundColor: COLORS.infoLight }]}>
-                  <Ionicons name="bicycle" size={22} color={COLORS.info} />
+                  <Ionicons name="person" size={22} color={COLORS.info} />
                 </View>
                 <View style={styles.personDetails}>
-                  <Text style={styles.personName}>Miguel Santos • Lalamove</Text>
-                  <Text style={styles.personMeta}>Plate: ABC 1234</Text>
+                  <Text style={styles.personName}>{activeQuest?.donor?.name || 'Verified Donor'}</Text>
+                  <Text style={styles.personMeta}>Blood Type: {activeQuest?.donor?.blood_type || 'O+'}</Text>
                 </View>
               </View>
             </View>

@@ -127,7 +127,12 @@ export default function RequesterHome({ navigation }) {
               const d = new Date(req.created_at);
 
               return (
-                <View key={req.id} style={[styles.requestCard, i < requests.length - 1 && styles.requestCardBorder]}>
+                <TouchableOpacity
+                  key={req.id}
+                  style={[styles.requestCard, i < requests.length - 1 && styles.requestCardBorder]}
+                  onPress={() => navigation.navigate('RequestStatus', { request: req })}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.requestLeft}>
                     <View style={styles.bloodPill}>
                       <Ionicons name="water" size={14} color={COLORS.primary} />
@@ -144,7 +149,7 @@ export default function RequesterHome({ navigation }) {
                   <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
                     <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

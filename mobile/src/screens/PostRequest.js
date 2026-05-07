@@ -45,13 +45,13 @@ export default function PostRequest({ navigation }) {
     if (!selectedHospital) return;
     setIsSubmitting(true);
     try {
-      await createRequest({
+      const res = await createRequest({
         hospital_id: selectedHospital.id,
         blood_type: selectedBlood,
         units_needed: parseInt(selectedUnit.replace('+', ''), 10) || 1,
         urgency: selectedUrgency
       });
-      navigation.goBack();
+      navigation.replace('RequestStatus', { request: res.request });
     } catch (err) {
       console.error('Submit failed', err);
       setIsSubmitting(false);
