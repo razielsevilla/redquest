@@ -480,6 +480,49 @@ app.post('/requests', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /requests/me
+app.get('/requests/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT br.*, h.name as hospital_name 
+       FROM blood_requests br
+       JOIN hospitals h ON h.id = br.hospital_id
+       WHERE br.requester_id = $1 
+       ORDER BY br.created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ requests: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch requests' });
+  }
+});
+
+// GET /requests/hospital
+app.get('/requests/hospital', authenticateToken, async (req, res) => {
+  try {
+    const hospitalStaffResult = await pool.query(`SELECT hospital_id FROM users WHERE id = $1`, [req.user.id]);
+    const hospitalId = hospitalStaffResult.rows[0]?.hospital_id;
+
+    if (!hospitalId) {
+      return res.status(403).json({ error: 'Not associated with a hospital' });
+    }
+
+    const result = await pool.query(
+      `SELECT br.*, h.name as hospital_name 
+       FROM blood_requests br
+       JOIN hospitals h ON h.id = br.hospital_id
+       WHERE br.hospital_id = $1 
+       ORDER BY br.created_at DESC`,
+      [hospitalId]
+    );
+    res.json({ requests: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch hospital requests' });
+  }
+});
+
 // GET /requests/:id
 app.get('/requests/:id', authenticateToken, async (req, res) => {
   try {
@@ -638,41 +681,6 @@ app.get('/hospitals', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /requests/me
-app.get('/requests/me', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT br.*, h.name as hospital_name 
-       FROM blood_requests br
-       JOIN hospitals h ON h.id = br.hospital_id
-       WHERE br.requester_id = $1 
-       ORDER BY br.created_at DESC`,
-      [req.user.id]
-    );
-    res.json({ requests: result.rows });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch requests' });
-  }
-});
-
-// GET /requests/hospital
-app.get('/requests/hospital', authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT br.*, h.name as hospital_name,
-       json_build_object('id', u.id, 'name', u.name, 'phone', u.phone) as requester
-       FROM blood_requests br
-       JOIN hospitals h ON h.id = br.hospital_id
-       JOIN users u ON u.id = br.requester_id
-       ORDER BY CASE WHEN br.status IN ('matching', 'accepted', 'rider_dispatched', 'donor_en_route') THEN 0 ELSE 1 END, br.created_at DESC`
-    );
-    res.json({ requests: result.rows });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch hospital requests' });
-  }
-});
 
 // GET /quests/history
 app.get('/quests/history', authenticateToken, async (req, res) => {

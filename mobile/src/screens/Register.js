@@ -113,6 +113,8 @@ export default function Register({ navigation }) {
         password,
         role,
         blood_type: role === 'hospital_staff' ? null : `${baseType}${rhFactor}`,
+        lat: 14.5995, // Default Manila latitude
+        lng: 120.9842, // Default Manila longitude
       });
       navigation.navigate('Login', {
         email: email.trim().toLowerCase(),
