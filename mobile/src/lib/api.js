@@ -1,10 +1,16 @@
 import * as storage from './storage';
+import Constants from 'expo-constants';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+// Priority:
+// 1. app.json extra.apiBaseUrl  — baked into the binary at build time (most reliable)
+// 2. EXPO_PUBLIC_API_BASE_URL   — Metro env var replacement (works when set correctly)
+// 3. Hardcoded Railway URL      — final fallback, never localhost
+const RAILWAY_URL = 'https://redquest-production.up.railway.app';
 
 export const API_BASE_URL =
+  Constants.expoConfig?.extra?.apiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
-  DEFAULT_API_BASE_URL;
+  RAILWAY_URL;
 
 const AUTH_TOKEN_KEY = 'redquest.authToken';
 
