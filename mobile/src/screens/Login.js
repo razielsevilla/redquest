@@ -105,13 +105,17 @@ export default function Login({ navigation, route }) {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        enabled={Platform.OS !== 'web'}
+      >
 
         {/* ── RESPONSIVE RED TOP SECTION ── */}
         <Animated.View style={[styles.redSection, { flex: topFlex, opacity: topFlex }]}>
-          <View style={styles.decorCircleLarge} />
-          <View style={styles.decorCircleSmall} />
-          <View style={styles.decorCircleRight} />
+          <View style={styles.decorCircleLarge} pointerEvents="none" />
+          <View style={styles.decorCircleSmall} pointerEvents="none" />
+          <View style={styles.decorCircleRight} pointerEvents="none" />
 
           <Animated.View style={[styles.logoArea, { opacity: fadeAnim }]}>
             <Image
@@ -246,7 +250,8 @@ const styles = StyleSheet.create({
 
   whitePanel: {
     flex: 1,
-    overflow: 'hidden', paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    overflow: Platform.OS === 'web' ? 'visible' : 'hidden',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
 
   splashContent: { paddingHorizontal: 28, paddingTop: 32, paddingBottom: 28 },

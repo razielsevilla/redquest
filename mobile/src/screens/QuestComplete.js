@@ -9,6 +9,13 @@ import { COLORS, SHADOWS, RADIUS } from '../lib/theme';
 
 export default function QuestComplete({ navigation, route }) {
   const stats = route.params?.stats || {};
+  const quest = route.params?.quest || {};
+  const user  = route.params?.user  || {};
+
+  const donorName   = user.name      || 'Donor';
+  const bloodType   = user.blood_type || quest.request_blood_type || 'O+';
+  const donationDate = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const newDonations = (user.donation_count || 0) + 1;
   const anims = useRef(
     Array.from({ length: 4 }, () => ({
       opacity: new Animated.Value(0),
@@ -66,12 +73,12 @@ export default function QuestComplete({ navigation, route }) {
               <Ionicons name="ribbon" size={28} color={COLORS.warning} />
             </View>
             <Text style={styles.certTitle}>Donation Certificate</Text>
-            <Text style={styles.certDate}>October 12, 2025</Text>
+            <Text style={styles.certDate}>{donationDate}</Text>
             <View style={styles.certDivider} />
-            <CertRow label="Donor" value="Juan dela Cruz" />
-            <CertRow label="Blood Type" value="O+ Positive" />
-            <CertRow label="Hemoglobin" value="14.2 g/dL" />
-            <CertRow label="Blood Pressure" value="120/80 mmHg" />
+            <CertRow label="Donor" value={donorName} />
+            <CertRow label="Blood Type" value={`${bloodType} Positive`.replace('++', '+')} />
+            <CertRow label="Donation #" value={`${newDonations}`} />
+            <CertRow label="Hospital" value={quest.hospital_name || 'Blood Bank'} />
             <CertRow label="XP Earned" value={`+${stats.xp_gained || 200} XP`} valueRed />
           </View>
         </Fade>

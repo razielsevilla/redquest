@@ -144,9 +144,10 @@ export default function Register({ navigation }) {
       
       {renderHeader()}
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
+        enabled={Platform.OS !== 'web'}
       >
         <View style={styles.content}>
           {/* Dynamic Header Section - shrinks on keyboard open */}

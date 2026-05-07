@@ -235,6 +235,8 @@ async function acceptQuest(questId, donorId) {
   const quest = questResult.rows[0];
   if (!quest) return { status: 404, body: { error: 'Quest not found' } };
   if (quest.donor_id !== donorId) return { status: 403, body: { error: 'This quest belongs to another donor' } };
+  // Idempotent: if already accepted by this donor, return success
+  if (quest.status === 'accepted') return { status: 200, body: { questId } };
   if (quest.status !== 'pending') return { status: 400, body: { error: 'Quest is no longer available' } };
 
   clearQuestTimer(questId);
